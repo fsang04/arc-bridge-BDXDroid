@@ -302,15 +302,15 @@ class Tron1WheeledBridge(Lcm2MujocoBridge):
         return qj_legs_ik
     
     def J_transpose_F (self):
-        new_qj_tau = ()
+        new_qj_tau = []
         for leg_i in range(2):
             Jacobian_foot_g = np.vstack((self.Jacobian_foot_global[:,:,leg_i], self.J_wheel_angle_global)) # 4x4
             u_trb = self.low_cmd.u_wrench[4*leg_i:4*leg_i+4] # [fx, fy, fz, torque] in world frame
             # pdb.set_trace()
             tau4 = Jacobian_foot_g.T @ u_trb
             # append the 4 torques for this leg to the tuple
-            new_qj_tau += tuple(map(float, tau4.tolist()))
-        # replace the qj_tau with the new tuple
+            new_qj_tau.extend(float(value) for value in tau4.tolist())
+        # replace the qj_tau with the new list
         self.low_cmd.qj_tau = new_qj_tau
         
 
