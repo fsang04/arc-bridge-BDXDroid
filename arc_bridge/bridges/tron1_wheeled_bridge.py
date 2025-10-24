@@ -106,7 +106,23 @@ class Tron1WheeledBridge(Lcm2MujocoBridge):
         # Used in simulation thread (update low_state from mj_data)
         # reload the positions and velocities with KF output
         self.update_state_estimation()
-        
+
+    def parse_robot_specific_low_command(self):
+        capital_control_cmd = self.low_cmd
+        lowercase_control_cmd = self.low_cmd_type()
+
+        lowercase_control_cmd.timestamp = capital_control_cmd.timestamp
+        lowercase_control_cmd.qj_pos[:] = list(capital_control_cmd.qj_pos)
+        lowercase_control_cmd.qj_vel[:] = list(capital_control_cmd.qj_vel)
+        lowercase_control_cmd.kp[:] = list(capital_control_cmd.kp)
+        lowercase_control_cmd.kd[:] = list(capital_control_cmd.kd)
+        lowercase_control_cmd.reset_se = capital_control_cmd.reset_se
+        lowercase_control_cmd.contact[:] = list(capital_control_cmd.contact)
+        lowercase_control_cmd.u_wrench[:] = list(capital_control_cmd.u_wrench)
+        lowercase_control_cmd.cost = capital_control_cmd.cost
+
+        self.low_cmd = lowercase_control_cmd
+        self.J_transpose_F()
 
     def lcm_state_handler(self, channel, data):
         if self.mj_data == None:
@@ -310,4 +326,3 @@ class Tron1WheeledBridge(Lcm2MujocoBridge):
                            self.low_cmd.kp[i] * (self.low_cmd.qj_pos[i] - self.low_state.qj_pos[i]) +\
                            self.low_cmd.kd[i] * (self.low_cmd.qj_vel[i] - self.low_state.qj_vel[i])
             self.mj_data.ctrl[i] = np.clip(motor_torque, motor_torque_limits[0], motor_torque_limits[1])
-        

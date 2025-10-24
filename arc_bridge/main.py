@@ -33,6 +33,7 @@ def simulate_mujoco():
             else:
                 # Publish to topic_state.upper() for real robot
                 bridge.publish_low_state(bridge.topic_state.upper(), skip_common_state=True) # need bridge.topic_state.upper()
+                bridge.publish_low_command(bridge.topic_cmd.upper(), replay_flag=True)
 
         # Wait to sync wall clock with simulation time
         next_time += mj_model.opt.timestep

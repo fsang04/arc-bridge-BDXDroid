@@ -170,6 +170,9 @@ class Lcm2MujocoBridge:
     def parse_robot_specific_low_state(self):
         pass
 
+    def parse_robot_specific_low_command(self):
+        return 0
+
     def publish_low_state(self, topic=None, skip_common_state=False):
         if topic is None:
             topic = self.topic_state
@@ -184,6 +187,18 @@ class Lcm2MujocoBridge:
         # Encode and publish robot states
         self.low_state.timestamp = time.time_ns()
         self.lc.publish(topic, self.low_state.encode())
+
+    def publish_low_command(self, topic=None, replay_flag=False):
+        if topic is None:
+            topic = self.topic_cmd
+
+        if replay_flag:
+            self.parse_robot_specific_low_command()
+            self.low_cmd.timestamp = time.time_ns()
+            control_topic = topic.upper()
+            self.lc.publish(control_topic, self.low_cmd.encode())
+        else:
+            self.update_motor_cmd()
 
     def publish_gamepad_cmd(self):
         if self.gamepad is None:
