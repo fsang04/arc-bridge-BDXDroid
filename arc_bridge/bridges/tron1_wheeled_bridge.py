@@ -57,6 +57,7 @@ class Tron1WheeledBridge(Lcm2MujocoBridge):
 
         self.R_torso_global = np.eye(3) # to store the torso to global rotation
         self.Jacobian_foot_global =  np.zeros((3, 4, 2)) # to store the foot jacobian
+        self.J_wheel_angle_global = np.array([0, 1, 1, 1]) # only the hip, knee, wheel affect the wheel rotation (global frame)
 
     def remove_calibration_bias(self):
         self.calibration = True
@@ -283,4 +284,30 @@ class Tron1WheeledBridge(Lcm2MujocoBridge):
             qj_legs_ik[:, leg_i] = np.array([q_abad, q_hip, q_knee, q_wheel])
 
         return qj_legs_ik
+    
+    def J_transpose_F (self):
+        new_qj_tau = ()
+        for leg_i in range(2):
+            Jacobian_foot_g = np.vstack((self.Jacobian_foot_global[:,:,leg_i], self.J_wheel_angle_global)) # 4x4
+            u_trb = self.low_cmd.u_wrench[4*leg_i:4*leg_i+4] # [fx, fy, fz, torque] in world frame
+            # pdb.set_trace()
+            tau4 = Jacobian_foot_g.T @ u_trb
+            # append the 4 torques for this leg to the tuple
+            new_qj_tau += tuple(map(float, tau4.tolist()))
+        # replace the qj_tau with the new tuple
+        self.low_cmd.qj_tau = new_qj_tau
+        
+
+    def update_motor_cmd(self):
+        # Low-level joint-level controller running at high frequency (only in simulation mode)
+        # build a new tuple of joint torques from wrench contributions
+        
+        self.J_transpose_F()
+
+        for i in range(self.num_motor):
+            motor_torque_limits = self.mj_model.actuator_ctrlrange[i]
+            motor_torque = self.low_cmd.qj_tau[i] +\
+                           self.low_cmd.kp[i] * (self.low_cmd.qj_pos[i] - self.low_state.qj_pos[i]) +\
+                           self.low_cmd.kd[i] * (self.low_cmd.qj_vel[i] - self.low_state.qj_vel[i])
+            self.mj_data.ctrl[i] = np.clip(motor_torque, motor_torque_limits[0], motor_torque_limits[1])
         
