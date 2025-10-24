@@ -105,6 +105,11 @@ class Tron1WheeledBridge(Lcm2MujocoBridge):
     def parse_robot_specific_low_state(self):
         # Used in simulation thread (update low_state from mj_data)
         # reload the positions and velocities with KF output
+
+        # update the R_torso_global (based on IMU rpy)
+        quat_from_imu = rpy_to_quat(np.array(self.low_state.rpy, dtype=float))
+        self.R_torso_global = quat_to_rot(quat_from_imu)
+        
         self.update_state_estimation()
 
     def parse_robot_specific_low_command(self):
@@ -305,8 +310,10 @@ class Tron1WheeledBridge(Lcm2MujocoBridge):
         new_qj_tau = []
         for leg_i in range(2):
             Jacobian_foot_g = np.vstack((self.Jacobian_foot_global[:,:,leg_i], self.J_wheel_angle_global)) # 4x4
-            u_trb = self.low_cmd.u_wrench[4*leg_i:4*leg_i+4] # [fx, fy, fz, torque] in world frame
+            u_wrench = np.array(self.low_cmd.u_wrench, dtype=float)
+            u_trb = u_wrench[4*leg_i:4*leg_i+4] # [fx, fy, fz, torque] in world frame
             # pdb.set_trace()
+            u_trb[0:3] = Rz_rotm(self.low_state.rpy[2]) @ u_trb[0:3] # rotate the force from yaw-aligned frame to global frame
             tau4 = Jacobian_foot_g.T @ u_trb
             # append the 4 torques for this leg to the tuple
             new_qj_tau.extend(float(value) for value in tau4.tolist())

@@ -106,3 +106,13 @@ def rot_coord(axis:str, theta:float) -> np.ndarray:
         R = np.array([c, s, 0, -s, c, 0, 0, 0, 1], dtype=DTYPE).reshape((3, 3))
 
     return R.T
+
+
+def Rz_rotm(yaw:float) -> np.ndarray:
+    """Return a 3x3 rotation matrix for rotation about Z-axis by angle `yaw` (radians)."""
+    R = np.array([
+        [np.cos(yaw), -np.sin(yaw), 0],
+        [np.sin(yaw),  np.cos(yaw), 0],
+        [0,            0,           1]
+    ])
+    return R
