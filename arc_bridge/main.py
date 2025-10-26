@@ -108,7 +108,7 @@ def main():
         # Subscribe to topic_state from real robot to parse common states
         bridge.register_low_state_subscriber(bridge.topic_state) # no upper()
         # Subscribe to topic_cmd.upper() from upper level controller to prevent wrong command sources
-        bridge.register_low_cmd_subscriber(bridge.topic_cmd.upper()) # need upper()
+        bridge.register_low_cmd_subscriber(bridge.topic_cmd)
     else:
         bridge.register_low_cmd_subscriber(bridge.topic_cmd)
         if bridge_name == "Tron1WheeledBridge":
