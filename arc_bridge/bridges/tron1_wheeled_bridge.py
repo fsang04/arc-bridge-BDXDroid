@@ -113,20 +113,20 @@ class Tron1WheeledBridge(Lcm2MujocoBridge):
         self.update_state_estimation()
 
     def parse_robot_specific_low_command(self):
-        capital_control_cmd = self.low_cmd
-        lowercase_control_cmd = self.low_cmd_type()
+        lowercase_control_cmd = self.low_cmd
+        uppercase_control_cmd = self.low_cmd_type()
 
-        lowercase_control_cmd.timestamp = capital_control_cmd.timestamp
-        lowercase_control_cmd.qj_pos[:] = list(capital_control_cmd.qj_pos)
-        lowercase_control_cmd.qj_vel[:] = list(capital_control_cmd.qj_vel)
-        lowercase_control_cmd.kp[:] = list(capital_control_cmd.kp)
-        lowercase_control_cmd.kd[:] = list(capital_control_cmd.kd)
-        lowercase_control_cmd.reset_se = capital_control_cmd.reset_se
-        lowercase_control_cmd.contact[:] = list(capital_control_cmd.contact)
-        lowercase_control_cmd.u_wrench[:] = list(capital_control_cmd.u_wrench)
-        lowercase_control_cmd.cost = capital_control_cmd.cost
+        uppercase_control_cmd.timestamp = lowercase_control_cmd.timestamp
+        uppercase_control_cmd.qj_pos[:] = list(lowercase_control_cmd.qj_pos)
+        uppercase_control_cmd.qj_vel[:] = list(lowercase_control_cmd.qj_vel)
+        uppercase_control_cmd.kp[:] = list(lowercase_control_cmd.kp)
+        uppercase_control_cmd.kd[:] = list(lowercase_control_cmd.kd)
+        uppercase_control_cmd.reset_se = lowercase_control_cmd.reset_se
+        uppercase_control_cmd.contact[:] = list(lowercase_control_cmd.contact)
+        uppercase_control_cmd.u_wrench[:] = list(lowercase_control_cmd.u_wrench)
+        uppercase_control_cmd.cost = lowercase_control_cmd.cost
 
-        self.low_cmd = lowercase_control_cmd
+        self.low_cmd = uppercase_control_cmd
         self.J_transpose_F()
 
     def lcm_state_handler(self, channel, data):
