@@ -28,7 +28,7 @@ def simulate_mujoco():
             bridge.publish_gamepad_cmd()
             if not args.replay:
                 bridge.publish_low_state(bridge.topic_state)
-                bridge.update_motor_cmd()
+                bridge.publish_low_command(bridge.topic_cmd, replay_flag=False)
                 bridge.low_cmd_received = False
             else:
                 # Publish to topic_state.upper() for real robot
