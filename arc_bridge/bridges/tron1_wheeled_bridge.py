@@ -359,21 +359,6 @@ class Tron1WheeledBridge(Lcm2MujocoBridge):
             new_qj_tau.extend(float(value) for value in tau4.tolist())
         # replace the qj_tau with the new list
         self.low_cmd.qj_tau = new_qj_tau
-        
-
-    def update_motor_cmd(self):
-        # Low-level joint-level controller running at high frequency (only in simulation mode)
-        # build a new tuple of joint torques from wrench contributions
-        
-        # TODO: should i do the JTF here? update motor command should not be reloaded
-        self.J_transpose_F()
-
-        for i in range(self.num_motor):
-            motor_torque_limits = self.mj_model.actuator_ctrlrange[i]
-            motor_torque = self.low_cmd.qj_tau[i] +\
-                           self.low_cmd.kp[i] * (self.low_cmd.qj_pos[i] - self.low_state.qj_pos[i]) +\
-                           self.low_cmd.kd[i] * (self.low_cmd.qj_vel[i] - self.low_state.qj_vel[i])
-            self.mj_data.ctrl[i] = np.clip(motor_torque, motor_torque_limits[0], motor_torque_limits[1])
 
 
     def track_mpc_trajectory(self):

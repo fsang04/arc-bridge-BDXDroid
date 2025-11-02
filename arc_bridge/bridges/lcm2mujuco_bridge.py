@@ -234,9 +234,8 @@ class Lcm2MujocoBridge:
     def publish_low_command(self, topic=None, replay_flag=False):
         if topic is None:
             topic = self.topic_cmd
-
+        self.parse_robot_specific_low_command()
         if replay_flag:
-            self.parse_robot_specific_low_command()
             self.low_cmd.timestamp = time.time_ns()
             control_topic = topic.upper()
             self.lc.publish(control_topic, self.low_cmd.encode())
