@@ -165,6 +165,17 @@ class Tron1WheeledBridge(Lcm2MujocoBridge):
         #  calculate the kinematics in body frame first
         self.calculate_wheel_pos_and_vel_body()
 
+        # verify my IK
+        pw_wheel_body = self.pw_body_frame.copy()
+        qj_legs_ik = self.ik_analy(pw_wheel_body)
+        qj_legs_gt = np.array(self.low_state.qj_pos)
+        # pdb.set_trace()
+        qj_legs_gt[[3,7]] = 0.0 # ignore the wheel angle for comparison
+        err = np.linalg.norm(qj_legs_ik - qj_legs_gt)
+        if err > 1e-3:
+            print(f"IK error: {np.linalg.norm(qj_legs_ik - qj_legs_gt)}")
+        # print(f"IK error per joint: {(qj_legs_ik - qj_legs_gt)}")
+
         # transfer to world frame
         R_body_to_world = self.R_torso_global
         torso_omega_world = R_body_to_world @ np.array(self.low_state.omega, dtype=float)
@@ -291,20 +302,20 @@ class Tron1WheeledBridge(Lcm2MujocoBridge):
             p_wheel_com_b = p_wheel_com_body[:, leg_i]
             x, y, z = p_wheel_com_b - self.p_abad[:, leg_i]
             # compute the q_abad first
-            len_abad2foot_yz_proj = np.sqrt(y^2 + z^2 - self.wheel_y_offset^2)
-            q_abad = np.arctan2(y,-z) - (-1)^leg_i * np.arctan2(self.wheel_y_offset, len_abad2foot_yz_proj)
+            len_abad2foot_yz_proj = np.sqrt(y**2 + z**2 - self.wheel_y_offset**2)
+            q_abad = np.arctan2(y,-z) - (-1)**leg_i * np.arctan2(self.wheel_y_offset, len_abad2foot_yz_proj)
 
             # with the len_abad2foot, compute the hip and knee
             len_hip2foot_yz_proj = len_abad2foot_yz_proj.copy()
-            len_hip2foot = np.sqrt((x+self.l1)^2 + len_hip2foot_yz_proj^2)
+            len_hip2foot = np.sqrt((x+self.l1)**2 + len_hip2foot_yz_proj**2)
             q_knee = -2 * np.arccos(len_hip2foot / (2*self.l2))
-            q_hip = np.arcsin(-x-self.l1, len_hip2foot) + (-q_knee)/2
+            q_hip = np.arcsin((-x-self.l1)/len_hip2foot) + (-q_knee)/2
 
             q_wheel = 0.0 # assume zero for now
 
             qj_legs_ik[:, leg_i] = np.array([q_abad, q_hip, q_knee, q_wheel])
 
-        return qj_legs_ik
+        return qj_legs_ik.T.reshape(-1) # return as 1D array of length 8
     
     def J_transpose_F (self):
         new_qj_tau = []
