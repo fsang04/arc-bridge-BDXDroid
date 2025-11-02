@@ -59,6 +59,15 @@ class Tron1WheeledBridge(Lcm2MujocoBridge):
         self.Jacobian_foot_global =  np.zeros((3, 4, 2)) # to store the foot jacobian
         self.J_wheel_angle_global = np.array([0, 1, 1, 1]) # only the hip, knee, wheel affect the wheel rotation (global frame)
 
+
+        # MPC trajectory tracking
+        self.pw_body_trajectory = None # to be filled from lcm msg [task space interpolation]
+        self.qj_pos_trajectory = None # to be filled from lcm msg [joint space interpolation]
+        self.interplolate_steps = 40 # dt between two mpc planned points / arc-bridge update dt (1ms)
+        self.interplolate_time_idx = 0 # index for interpolation
+        self.delay_compensation_steps = 0 # delay compensation steps (1 step = 1ms) [for controller delay ~10ms]
+
+
     def remove_calibration_bias(self):
         self.calibration = True
         self.gravity_add_bias = np.array([0, 0, 9.81])
@@ -129,6 +138,27 @@ class Tron1WheeledBridge(Lcm2MujocoBridge):
         self.low_cmd = uppercase_control_cmd
         self.J_transpose_F()
 
+        # TODO: add IK to follow the mpc trajectory
+        self.track_mpc_trajectory()
+
+    def lcm_cmd_handler(self, channel, data):
+        if self.mj_data is None:
+            return
+
+        self.low_cmd = self.low_cmd_type.decode(data)
+        self.low_cmd_received = True
+
+        # update the mpc trajectory
+        
+        self.pw_body_trajectory = np.array([self.low_cmd.pw_body_cur, self.low_cmd.pw_body_next]).reshape((2,6)).T
+        pw_cur = np.array(self.low_cmd.pw_body_cur).reshape(2,3).T
+        pw_next = np.array(self.low_cmd.pw_body_next).reshape(2,3).T
+        # pdb.set_trace()
+        self.qj_pos_trajectory = np.array([self.ik_analy(pw_cur), self.ik_analy(pw_next)]).reshape((2,8))
+        self.interplolate_time_idx = self.delay_compensation_steps # start from delay compensation step
+
+
+
     def lcm_state_handler(self, channel, data):
         if self.mj_data == None:
             return
@@ -145,10 +175,9 @@ class Tron1WheeledBridge(Lcm2MujocoBridge):
         self.low_state.quaternion[:] = msg.quaternion
         self.low_state.rpy[:] = msg.rpy
 
-        # update the R_torso_global (based on IMU rpy)
-        quat_from_imu = rpy_to_quat(np.array(self.low_state.rpy, dtype=float))
-        self.R_torso_global = quat_to_rot(quat_from_imu)
-
+        # # update the R_torso_global (based on IMU rpy)
+        # quat_from_imu = rpy_to_quat(np.array(self.low_state.rpy, dtype=float))
+        # self.R_torso_global = quat_to_rot(quat_from_imu)
         
         # Update mj_data for visualization 
         self.mj_data.qpos[0] = msg.position[0] # robot in the mujoco viewer is vicon pose
@@ -166,14 +195,14 @@ class Tron1WheeledBridge(Lcm2MujocoBridge):
         self.calculate_wheel_pos_and_vel_body()
 
         # verify my IK
-        pw_wheel_body = self.pw_body_frame.copy()
-        qj_legs_ik = self.ik_analy(pw_wheel_body)
-        qj_legs_gt = np.array(self.low_state.qj_pos)
-        # pdb.set_trace()
-        qj_legs_gt[[3,7]] = 0.0 # ignore the wheel angle for comparison
-        err = np.linalg.norm(qj_legs_ik - qj_legs_gt)
-        if err > 1e-3:
-            print(f"IK error: {np.linalg.norm(qj_legs_ik - qj_legs_gt)}")
+        # pw_wheel_body = self.pw_body_frame.copy()
+        # qj_legs_ik = self.ik_analy(pw_wheel_body)
+        # qj_legs_gt = np.array(self.low_state.qj_pos)
+        # # pdb.set_trace()
+        # qj_legs_gt[[3,7]] = 0.0 # ignore the wheel angle for comparison
+        # err = np.linalg.norm(qj_legs_ik - qj_legs_gt)
+        # if err > 1e-3:
+        #     print(f"IK error: {np.linalg.norm(qj_legs_ik - qj_legs_gt)}")
         # print(f"IK error per joint: {(qj_legs_ik - qj_legs_gt)}")
 
         # transfer to world frame
@@ -336,6 +365,7 @@ class Tron1WheeledBridge(Lcm2MujocoBridge):
         # Low-level joint-level controller running at high frequency (only in simulation mode)
         # build a new tuple of joint torques from wrench contributions
         
+        # TODO: should i do the JTF here? update motor command should not be reloaded
         self.J_transpose_F()
 
         for i in range(self.num_motor):
@@ -344,3 +374,16 @@ class Tron1WheeledBridge(Lcm2MujocoBridge):
                            self.low_cmd.kp[i] * (self.low_cmd.qj_pos[i] - self.low_state.qj_pos[i]) +\
                            self.low_cmd.kd[i] * (self.low_cmd.qj_vel[i] - self.low_state.qj_vel[i])
             self.mj_data.ctrl[i] = np.clip(motor_torque, motor_torque_limits[0], motor_torque_limits[1])
+
+
+    def track_mpc_trajectory(self):
+        self.interplolate_time_idx += 1
+        if self.interplolate_time_idx >= self.interplolate_steps:
+            self.interplolate_time_idx = self.interplolate_steps - 1 # stay at the last index
+        alpha = self.interplolate_time_idx / self.interplolate_steps
+        # joint space interpolation
+        qj_pos_target = (1 - alpha) * self.qj_pos_trajectory[0,:] + alpha * self.qj_pos_trajectory[1,:]
+        self.low_cmd.qj_pos[:] = qj_pos_target.tolist()
+        self.low_cmd.qj_vel[:] = ((self.qj_pos_trajectory[1,:] - self.qj_pos_trajectory[0,:]) / (self.interplolate_steps * 0.001)).tolist()
+
+
