@@ -22,6 +22,7 @@ class BdxDroidBridge(Lcm2MujocoBridge):
         self.low_state.inertia_mat = temp_inertia_mat.tolist()
         self.low_state.bias_force = self.mj_data.qfrc_bias.tolist()
 
+        # tau = Mddq + C + G, C+G is the bias forces
         self.update_kinematics()
     
     def update_kinematics(self):
@@ -56,11 +57,13 @@ class BdxDroidBridge(Lcm2MujocoBridge):
         dJdq_foot_L = dJ_foot_L @ dq 
 
         # RIGHT NOW BASED ON BIPEDPOINTFOOT LCM TYPE -> change to rabbit? 
+        # wouldn't BIPEDPOINTFOOT or BIPEDLINEFOOT would better for us?
         # should pf be vstack?
+        # gc - ground contact
         p_gc = np.hstack((right_foot_pos, left_foot_pos)) # concatenate positions, 6x1
         J_gc = np.vstack((J_foot_R, J_foot_L)) # stack Jacobians, 6xnv
-        dJdq_gc = np.vstack((dJdq_foot_R, dJdq_foot_L)) # 6x1 ?
-
+        # dJdq_gc = np.vstack((dJdq_foot_R, dJdq_foot_L)) # 6x1 ?
+        dJdq_gc = np.hstack((dJdq_foot_R,dJdq_foot_L))
         # send through LCM
         self.low_state.p_gc = p_gc.tolist()
         self.low_state.J_gc = J_gc.tolist()

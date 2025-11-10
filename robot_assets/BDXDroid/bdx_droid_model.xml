@@ -20,6 +20,10 @@
       <!-- -->
     </default>
   </default>
+  <!-- Added classe for the Actuators (use motor bc thats how Mujoco knows its actuator)-->
+  <default>
+    <motor ctrllimited="true" ctrlrange="-1 1" gear="150"/>
+  </default> 
   <worldbody>
     <!-- Link trunk_assembly, height offset by 42 cm -->
     <body name="trunk_assembly" pos="0 0 0.2" quat="1 0 0 0" childclass="bdx_droid_model">
@@ -682,4 +686,57 @@
     <position class="bdx_droid_model" name="right_ankle" joint="right_ankle" forcerange="-10.0 10.0" inheritrange="1"/>
   </actuator>
   <equality/>
+  
+  <!-- Sensors -->
+  <sensor>
+    <!-- Position -->
+    <jointpos name="left_hip_yaw_pos" joint="left_hip_yaw" />
+    <jointpos name="left_hip_roll_pos" joint="left_hip_roll" />
+    <jointpos name="left_hip_pitch_pos" joint="left_hip_pitch" />
+    <jointpos name="left_knee_pos" joint="left_knee" />
+    <jointpos name="left_ankle_pos" joint="left_ankle" />
+    
+    <jointpos name="right_hip_yaw_pos" joint="right_hip_yaw" />
+    <jointpos name="right_hip_roll_pos" joint="right_hip_roll" />
+    <jointpos name="right_hip_pitch_pos" joint="right_hip_pitch" />
+    <jointpos name="right_knee_pos" joint="right_knee" />
+    <jointpos name="right_ankle_pos" joint="right_ankle" />
+    
+    <!-- Velocity -->
+    <jointvel name="left_hip_yaw_vel" joint="left_hip_yaw" />
+    <jointvel name="left_hip_roll_vel" joint="left_hip_roll" />
+    <jointvel name="left_hip_pitch_vel" joint="left_hip_pitch" />
+    <jointvel name="left_knee_vel" joint="left_knee" />
+    <jointvel name="left_ankle_vel" joint="left_ankle" />
+
+    <jointvel name="right_hip_yaw_vel" joint="right_hip_yaw" />
+    <jointvel name="right_hip_roll_vel" joint="right_hip_roll" />
+    <jointvel name="right_hip_pitch_vel" joint="right_hip_pitch" />
+    <jointvel name="right_knee_vel" joint="right_knee" />
+    <jointvel name="right_ankle_vel" joint="right_ankle" />
+
+    <!-- Torques -->
+    <jointactuatorfrc name="left_hip_yaw_torque" joint="left_hip_yaw" />
+    <jointactuatorfrc name="left_hip_roll_torque" joint="left_hip_roll" />
+    <jointactuatorfrc name="left_hip_pitch_torque" joint="left_hip_pitch" />
+    <jointactuatorfrc name="left_knee_torque" joint="left_knee" />
+    <jointactuatorfrc name="left_ankle_torque" joint="left_ankle" />
+    
+    <jointactuatorfrc name="right_hip_yaw_torque" joint="right_hip_yaw" />
+    <jointactuatorfrc name="right_hip_roll_torque" joint="right_hip_roll" />
+    <jointactuatorfrc name="right_hip_pitch_torque" joint="right_hip_pitch" />
+    <jointactuatorfrc name="right_knee_torque" joint="right_knee" />
+    <jointactuatorfrc name="right_ankle_torque" joint="right_ankle" />
+
+    <framequat name="imu_quat" objtype="site" objname="imu" />
+    <gyro name="imu_gyro" site="imu" />
+    <accelerometer name="imu_acc" site="imu" />
+    
+    <framepos name="frame_pos" objtype="site" objname="imu" />
+    <framelinvel name="frame_vel" objtype="site" objname="imu" />
+
+    <touch name="left_foot_force" site="left_foot" />
+    <touch name="right_foot_force" site="right_foot" />
+  </sensor>
+
 </mujoco>

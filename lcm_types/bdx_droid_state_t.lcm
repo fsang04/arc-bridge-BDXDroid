@@ -21,7 +21,7 @@ struct bdx_droid_state_t
     double   qj_vel[10];
     double   qj_tau[10];
 
-    // point foot -> don't need for SLIP?
+    // point foot -> don't need for SLIP? - He has it tho in the rabbit
     double   foot_force[2];
 
     // can get mass matrix from spatial v2? 
