@@ -686,7 +686,7 @@
     <position class="bdx_droid_model" name="right_ankle" joint="right_ankle" forcerange="-10.0 10.0" inheritrange="1"/>
   </actuator>
   <equality/>
-  
+
   <!-- Sensors -->
   <sensor>
     <!-- Position -->
@@ -728,9 +728,9 @@
     <jointactuatorfrc name="right_knee_torque" joint="right_knee" />
     <jointactuatorfrc name="right_ankle_torque" joint="right_ankle" />
 
-    <framequat name="imu_quat" objtype="site" objname="imu" />
-    <gyro name="imu_gyro" site="imu" />
-    <accelerometer name="imu_acc" site="imu" />
+    <framequat name="imu_quat" objtype="site" objname="imu" noise="0.01"/>
+    <gyro name="imu_gyro" site="imu" noise="0.01" />
+    <accelerometer name="imu_acc" site="imu" noise="0.01" />
     
     <framepos name="frame_pos" objtype="site" objname="imu" />
     <framelinvel name="frame_vel" objtype="site" objname="imu" />

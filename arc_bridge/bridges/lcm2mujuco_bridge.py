@@ -22,7 +22,7 @@ class Lcm2MujocoBridge:
         self.topic_cmd = config.robot_cmd_topic
         self.config = config
 
-        self.num_motor = 10 # only 10 sensors for the legs
+        self.num_motor = self.mj_model.nu
         self.num_body_state = self.mj_model.nq - self.num_motor
         self.num_joint_state = self.num_motor
         self.dim_motor_sensor = MOTOR_SENSOR_NUM * self.num_motor
@@ -124,16 +124,12 @@ class Lcm2MujocoBridge:
         # Motors (5 each leg -> 10 total)
         # Assume each joint has a position, velocity, and torque sensor
         for i in range(self.num_motor):
-            
-            noise_idx_pos = min(i,len(self.mj_model.sensor_noise) -1)
-            noise_idx_vel = min(i + self.num_motor,len(self.mj_model.sensor_noise) -1)
-            noise_idx_tau = min(i + 2*self.num_motor,len(self.mj_model.sensor_noise) -1)
             self.low_state.qj_pos[i] = self.mj_data.sensordata[i] + self.joint_offsets[i] \
-                + np.random.normal(0, self.mj_model.sensor_noise[noise_idx_pos])
+                + np.random.normal(0, self.mj_model.sensor_noise[i])
             self.low_state.qj_vel[i] = self.mj_data.sensordata[i + self.num_motor] \
-                + np.random.normal(0, self.mj_model.sensor_noise[noise_idx_vel])
+                + np.random.normal(0, self.mj_model.sensor_noise[i + self.num_motor])
             self.low_state.qj_tau[i] = self.mj_data.sensordata[i + 2 * self.num_motor] \
-                + np.random.normal(0, self.mj_model.sensor_noise[noise_idx_tau])
+                + np.random.normal(0, self.mj_model.sensor_noise[i + 2 * self.num_motor])
 
         if self.have_frame_sensor:
             # Ground truth position and velocity readings in the world frame
@@ -150,27 +146,22 @@ class Lcm2MujocoBridge:
             self.low_state.foot_force[:] = self.mj_data.sensordata[self.dim_motor_sensor + 16:self.dim_motor_sensor + 16 + self.num_foot_sensor]
 
         if self.have_imu:
-            # base is index for the orientation/quaternion
-            noise_idx_base = min(self.dim_motor_sensor,len(self.mj_model.sensor_noise) -1) 
-            noise_idx_gyro = min(self.dim_motor_sensor + 1,len(self.mj_model.sensor_noise) -1)
-            noise_idx_acc = min(self.dim_motor_sensor + 2,len(self.mj_model.sensor_noise) -1)
-
             quat = Quaternion(*self.mj_data.sensordata[self.dim_motor_sensor:self.dim_motor_sensor + 4])
             rpy = quat_to_rpy(quat)
-            self.low_state.rpy[0] = rpy[0] + np.random.normal(0, self.mj_model.sensor_noise[noise_idx_base])
-            self.low_state.rpy[1] = rpy[1] + np.random.normal(0, self.mj_model.sensor_noise[noise_idx_base])
-            self.low_state.rpy[2] = rpy[2] + np.random.normal(0, self.mj_model.sensor_noise[noise_idx_base])
+            self.low_state.rpy[0] = rpy[0] + np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor])
+            self.low_state.rpy[1] = rpy[1] + np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor])
+            self.low_state.rpy[2] = rpy[2] + np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor])
             self.low_state.quaternion[:] = rpy_to_quat(self.low_state.rpy).to_numpy().tolist()
 
             # Body frame angular rate and linear acceleration
             self.low_state.omega[:] = self.mj_data.sensordata[self.dim_motor_sensor + 4:self.dim_motor_sensor + 7]
-            self.low_state.omega[0] += np.random.normal(0, self.mj_model.sensor_noise[noise_idx_gyro])
-            self.low_state.omega[1] += np.random.normal(0, self.mj_model.sensor_noise[noise_idx_gyro])
-            self.low_state.omega[2] += np.random.normal(0, self.mj_model.sensor_noise[noise_idx_gyro])
+            self.low_state.omega[0] += np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor + 1])
+            self.low_state.omega[1] += np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor + 1])
+            self.low_state.omega[2] += np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor + 1])
             self.low_state.acceleration[:] = self.mj_data.sensordata[self.dim_motor_sensor + 7:self.dim_motor_sensor + 10]
-            self.low_state.acceleration[0] += np.random.normal(0, self.mj_model.sensor_noise[noise_idx_acc])
-            self.low_state.acceleration[1] += np.random.normal(0, self.mj_model.sensor_noise[noise_idx_acc])
-            self.low_state.acceleration[2] += np.random.normal(0, self.mj_model.sensor_noise[noise_idx_acc])
+            self.low_state.acceleration[0] += np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor + 2])
+            self.low_state.acceleration[1] += np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor + 2])
+            self.low_state.acceleration[2] += np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor + 2])
 
             # self.mj_data.qvel[3:6] # this is Eular angle rate != omega_body
             # self.low_state.omega[:] = omega_body.tolist()
