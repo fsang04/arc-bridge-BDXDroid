@@ -84,6 +84,8 @@
     </actuator>
 
     <sensor>
+    <!-- define 6 groups in this order
+        joint pos, vel, actuator force (joint torque) for each joint-->
         <jointpos name="right_hip_pos" joint="right_hip_ry"/>
         <jointpos name="right_knee_pos" joint="right_knee_ry"/>
         <jointpos name="left_hip_pos" joint="left_hip_ry"/>
@@ -98,7 +100,7 @@
         <jointactuatorfrc name="right_knee_tau" joint="right_knee_ry"/>
         <jointactuatorfrc name="left_hip_tau" joint="left_hip_ry"/>
         <jointactuatorfrc name="left_knee_tau" joint="left_knee_ry"/>
-
+    <!-- need to link below to a site, imu is at CoM-->
         <framequat name="imu_quat" objtype="site" objname="imu" noise="0.01"/>
         <gyro name="imu_gyro" site="imu" noise="0.01"/>
         <accelerometer name="imu_acc" site="imu" noise="0.01"/>

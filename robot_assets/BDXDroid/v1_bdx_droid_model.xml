@@ -268,7 +268,7 @@
       <!-- change all joints to be fixed -->
       <body name="neck_pitch_assembly" pos="0.001 0.01915 0.0900009" quat="0.707107 0.707107 -7.96148e-15 7.80864e-15">
         <!-- Joint from trunk_assembly to neck_pitch_assembly -->
-        <joint axis="0 0 1" name="neck_pitch" type="hinge" range="-0.3490658503988437 1.1344640137963364"/>
+        <joint axis="0 0 1" name="neck_pitch" type="hinge" range="-0.3490658503988437 1.1344640137963364" class="virtual_joint"/>
         <inertial pos="-5.63137e-06 0.0492968 0.0181786" mass="0.06618" fullinertia="3.49456e-05 1.70231e-05 2.80043e-05 8.75633e-09 -2.15592e-09 -1.85188e-08"/>
         <!-- Part neck_left_sheet -->
         <geom type="mesh" class="visual" pos="-0.02 -0.02511 0.01905" quat="0.707107 -0.707107 0 3.11573e-34" mesh="neck_left_sheet" material="neck_left_sheet_material"/>
@@ -294,7 +294,7 @@
         <!-- Link head_pitch_to_yaw -->
         <body name="head_pitch_to_yaw" pos="2.21177e-17 0.066 -1.04083e-17" quat="1 -6.82994e-17 -0 2.77556e-17">
           <!-- Joint from neck_pitch_assembly to head_pitch_to_yaw -->
-          <joint axis="0 0 1" name="head_pitch" type="hinge" range="-0.7853981633974483 0.7853981633974483"/>
+          <joint axis="0 0 1" name="head_pitch" type="hinge" range="-0.7853981633974483 0.7853981633974483" class="virtual_joint"/>
           <inertial pos="-0.00766247 0.026015 0.0186681" mass="0.0169378" fullinertia="9.43036e-06 4.64763e-06 8.02915e-06 1.35195e-06 3.05899e-08 -8.42802e-08"/>
           <!-- Part head_pitch_to_yaw -->
           <geom type="mesh" class="visual" pos="-0.02 -0.09111 0.01905" quat="0.707107 -0.707107 -0 -1.20045e-33" mesh="head_pitch_to_yaw" material="head_pitch_to_yaw_material"/>
@@ -302,7 +302,7 @@
           <!-- Link neck_yaw_assembly -->
           <body name="neck_yaw_assembly" pos="-1.32273e-17 0.057 0.01905" quat="0.707107 -0.707107 0 2.16489e-17">
             <!-- Joint from head_pitch_to_yaw to neck_yaw_assembly -->
-            <joint axis="0 0 1" name="head_yaw" type="hinge" range="-2.792526803190927 2.792526803190927"/>
+            <joint axis="0 0 1" name="head_yaw" type="hinge" range="-2.792526803190927 2.792526803190927" class="virtual_joint"/>
             <inertial pos="0.00412907 3.95745e-06 -0.0222828" mass="0.0918099" fullinertia="3.11706e-05 6.94935e-05 7.04025e-05 4.29429e-09 -4.41251e-06 -3.82028e-09"/>
             <!-- Part head_yaw_to_roll -->
             <geom type="mesh" class="visual" pos="-0.02 6.13929e-18 -0.14821" quat="1 0 -1.09032e-16 -7.50622e-17" mesh="head_yaw_to_roll" material="head_yaw_to_roll_material"/>
@@ -325,7 +325,7 @@
             <!-- Link head_assembly -->
             <body name="head_assembly" pos="0.04095 6.13929e-18 -0.01915" quat="0.707107 0 -0.707107 -1.77494e-30">
               <!-- Joint from neck_yaw_assembly to head_assembly -->
-              <joint axis="0 0 1" name="head_roll" type="hinge" range="-0.5235987755982988 0.5235987755982988"/>
+              <joint axis="0 0 1" name="head_roll" type="hinge" range="-0.5235987755982988 0.5235987755982988" class="virtual_joint"/>
               <inertial pos="0.00815617 -0.0039342 0.0227894" mass="0.406607" fullinertia="0.00244582 0.00168662 0.00107943 -2.00028e-06 9.23825e-05 -1.90734e-05"/>
               <!-- Part right_antenna_holder -->
               <geom type="mesh" class="visual" pos="-0.12906 -3.15521e-14 0.06095" quat="0.707107 -7.80064e-14 0.707107 1.15784e-13" mesh="right_antenna_holder" material="right_antenna_holder_material"/>
@@ -560,61 +560,61 @@
     </body>
   </worldbody>
   <asset>
-    <mesh file="left_cache.stl"/>
-    <mesh file="left_knee_to_ankle_left_sheet.stl"/>
-    <mesh file="head_roll_mount.stl"/>
-    <mesh file="neck_left_sheet.stl"/>
-    <mesh file="sg90.stl"/>
-    <mesh file="battery_pack_lid.stl"/>
-    <mesh file="speaker_stand.stl"/>
-    <mesh file="antenna.stl"/>
-    <mesh file="flash_reflector_interface.stl"/>
-    <mesh file="trunk_bottom.stl"/>
-    <mesh file="right_cache.stl"/>
-    <mesh file="left_roll_to_pitch.stl"/>
-    <mesh file="head.stl"/>
-    <mesh file="speaker_interface.stl"/>
-    <mesh file="bms.stl"/>
-    <mesh file="head_yaw_to_roll.stl"/>
-    <mesh file="body_front.stl"/>
-    <mesh file="bulb.stl"/>
-    <mesh file="holder.stl"/>
-    <mesh file="wj_wk00_0122topcabinetcase_95.stl"/>
-    <mesh file="right_antenna_holder.stl"/>
-    <mesh file="neck_right_sheet.stl"/>
+    <mesh file="wj_wk00_0124bottomcase_45.stl"/>
     <mesh file="foot_bottom_pla.stl"/>
-    <mesh file="wj_wk00_0123middlecase_56.stl"/>
-    <mesh file="roll_motor_bottom.stl"/>
-    <mesh file="roll_motor_top.stl"/>
-    <mesh file="head_pitch_to_yaw.stl"/>
-    <mesh file="foot_top.stl"/>
-    <mesh file="passive_palonier.stl"/>
-    <mesh file="board.stl"/>
-    <mesh file="body_back.stl"/>
-    <mesh file="drive_palonier.stl"/>
-    <mesh file="right_eye.stl"/>
-    <mesh file="roll_bearing.stl"/>
     <mesh file="head_bot_sheet.stl"/>
-    <mesh file="leg_spacer.stl"/>
-    <mesh file="foot_side.stl"/>
-    <mesh file="right_roll_to_pitch.stl"/>
+    <mesh file="bno055.stl"/>
     <mesh file="cell.stl"/>
     <mesh file="glass.stl"/>
-    <mesh file="wj_wk00_0124bottomcase_45.stl"/>
+    <mesh file="left_antenna_holder.stl"/>
+    <mesh file="right_antenna_holder.stl"/>
+    <mesh file="usb_c_charger.stl"/>
+    <mesh file="speaker_interface.stl"/>
+    <mesh file="right_roll_to_pitch.stl"/>
+    <mesh file="left_cache.stl"/>
+    <mesh file="foot_top.stl"/>
+    <mesh file="body_middle_top.stl"/>
+    <mesh file="head.stl"/>
+    <mesh file="wj_wk00_0123middlecase_56.stl"/>
+    <mesh file="head_yaw_to_roll.stl"/>
+    <mesh file="flash_reflector_interface.stl"/>
+    <mesh file="body_middle_bottom.stl"/>
+    <mesh file="left_knee_to_ankle_right_sheet.stl"/>
+    <mesh file="left_knee_to_ankle_left_sheet.stl"/>
+    <mesh file="leg_spacer.stl"/>
+    <mesh file="raspberrypizerow.stl"/>
+    <mesh file="full_speaker.stl"/>
+    <mesh file="power_switch.stl"/>
+    <mesh file="body_front.stl"/>
+    <mesh file="board.stl"/>
+    <mesh file="cam.stl"/>
+    <mesh file="body_back.stl"/>
+    <mesh file="roll_motor_top.stl"/>
+    <mesh file="holder.stl"/>
+    <mesh file="roll_motor_bottom.stl"/>
+    <mesh file="speaker_stand.stl"/>
+    <mesh file="flash_light_module.stl"/>
+    <mesh file="sg90.stl"/>
+    <mesh file="neck_right_sheet.stl"/>
+    <mesh file="antenna.stl"/>
+    <mesh file="trunk_bottom.stl"/>
+    <mesh file="head_roll_mount.stl"/>
+    <mesh file="right_cache.stl"/>
+    <mesh file="left_roll_to_pitch.stl"/>
+    <mesh file="head_pitch_to_yaw.stl"/>
+    <mesh file="battery_pack_lid.stl"/>
+    <mesh file="passive_palonier.stl"/>
+    <mesh file="wj_wk00_0122topcabinetcase_95.stl"/>
     <mesh file="trunk_top.stl"/>
     <mesh file="foot_bottom_tpu.stl"/>
     <mesh file="left_eye.stl"/>
-    <mesh file="left_knee_to_ankle_right_sheet.stl"/>
-    <mesh file="full_speaker.stl"/>
-    <mesh file="body_middle_bottom.stl"/>
-    <mesh file="left_antenna_holder.stl"/>
-    <mesh file="raspberrypizerow.stl"/>
-    <mesh file="cam.stl"/>
-    <mesh file="body_middle_top.stl"/>
-    <mesh file="usb_c_charger.stl"/>
-    <mesh file="power_switch.stl"/>
-    <mesh file="bno055.stl"/>
-    <mesh file="flash_light_module.stl"/>
+    <mesh file="bms.stl"/>
+    <mesh file="right_eye.stl"/>
+    <mesh file="bulb.stl"/>
+    <mesh file="foot_side.stl"/>
+    <mesh file="roll_bearing.stl"/>
+    <mesh file="neck_left_sheet.stl"/>
+    <mesh file="drive_palonier.stl"/>
     <material name="body_front_material" rgba="0.917647 0.917647 0.917647 1"/>
     <material name="usb_c_charger_material" rgba="0.615686 0.811765 0.929412 1"/>
     <material name="body_back_material" rgba="0.917647 0.917647 0.917647 1"/>
@@ -677,6 +677,10 @@
     <position class="bdx_droid_model" name="left_hip_pitch" joint="left_hip_pitch" forcerange="-10.0 10.0" inheritrange="1"/>
     <position class="bdx_droid_model" name="left_knee" joint="left_knee" forcerange="-10.0 10.0" inheritrange="1"/>
     <position class="bdx_droid_model" name="left_ankle" joint="left_ankle" forcerange="-10.0 10.0" inheritrange="1"/>
+    <position class="virtual_joint" name="neck_pitch" joint="neck_pitch" inheritrange="1"/>
+    <position class="virtual_joint" name="head_pitch" joint="head_pitch" inheritrange="1"/>
+    <position class="virtual_joint" name="head_yaw" joint="head_yaw" inheritrange="1"/>
+    <position class="virtual_joint" name="head_roll" joint="head_roll" inheritrange="1"/>
     <position class="bdx_droid_model" name="right_hip_yaw" joint="right_hip_yaw" forcerange="-10.0 10.0" inheritrange="1"/>
     <position class="bdx_droid_model" name="right_hip_roll" joint="right_hip_roll" forcerange="-10.0 10.0" inheritrange="1"/>
     <position class="bdx_droid_model" name="right_hip_pitch" joint="right_hip_pitch" forcerange="-10.0 10.0" inheritrange="1"/>
@@ -684,47 +688,23 @@
     <position class="bdx_droid_model" name="right_ankle" joint="right_ankle" forcerange="-10.0 10.0" inheritrange="1"/>
   </actuator>
   <sensor>
-    <!-- define 6 groups in this order -->
-      <!-- joint pos -->
-      <jointpos name="left_hip_yaw_pos" joint="left_hip_yaw"/>
-      <jointpos name="left_hip_roll_pos" joint="left_hip_roll"/>
-      <jointpos name="left_hip_pitch_pos" joint="left_hip_pitch"/>
-      <jointpos name="left_knee_pos" joint="left_knee"/>
-      <jointpos name="left_ankle_pos" joint="left_ankle"/>
+    <!-- define 6 groups in this order
+    joint pos, vel, actuator force (joint torque) for each joint-->
+      <jointpos name="right_hip_pos" joint="right_hip_ry"/>
+      <jointpos name="right_knee_pos" joint="right_knee_ry"/>
+      <jointpos name="left_hip_pos" joint="left_hip_ry"/>
+      <jointpos name="left_knee_pos" joint="left_knee_ry"/>
 
-      <jointpos name="right_hip_yaw_pos" joint="right_hip_yaw"/>
-      <jointpos name="right_hip_roll_pos" joint="right_hip_roll"/>
-      <jointpos name="right_hip_pitch_pos" joint="right_hip_pitch"/>
-      <jointpos name="right_knee_pos" joint="right_knee"/>
-      <jointpos name="right_ankle_pos" joint="right_ankle"/>
+      <jointvel name="right_hip_vel" joint="right_hip_ry"/>
+      <jointvel name="right_knee_vel" joint="right_knee_ry"/>
+      <jointvel name="left_hip_vel" joint="left_hip_ry"/>
+      <jointvel name="left_knee_vel" joint="left_knee_ry"/>
 
-      <!-- joint vel -->
-      <jointvel name="left_hip_yaw_vel" joint="left_hip_yaw"/>
-      <jointvel name="left_hip_roll_vel" joint="left_hip_roll"/>
-      <jointvel name="left_hip_pitch_vel" joint="left_hip_pitch"/>
-      <jointvel name="left_knee_vel" joint="left_knee"/>
-      <jointvel name="left_ankle_vel" joint="left_ankle"/>
-
-      <jointvel name="right_hip_yaw_vel" joint="right_hip_yaw"/>
-      <jointvel name="right_hip_roll_vel" joint="right_hip_roll"/>
-      <jointvel name="right_hip_pitch_vel" joint="right_hip_pitch"/>
-      <jointvel name="right_knee_vel" joint="right_knee"/>
-      <jointvel name="right_ankle_vel" joint="right_ankle"/>
-
-      <!-- joint actuator force (joint torque) -->
-      <jointactuatorfrc name="left_hip_yaw_tau" joint="left_hip_yaw"/>
-      <jointactuatorfrc name="left_hip_roll_tau" joint="left_hip_roll"/>
-      <jointactuatorfrc name="left_hip_pitch_tau" joint="left_hip_pitch"/>
-      <jointactuatorfrc name="left_knee_tau" joint="left_knee"/>
-      <jointactuatorfrc name="left_ankle_tau" joint="left_ankle"/>
-
-      <jointactuatorfrc name="right_hip_yaw_tau" joint="right_hip_yaw"/>
-      <jointactuatorfrc name="right_hip_roll_tau" joint="right_hip_roll"/>
-      <jointactuatorfrc name="right_hip_pitch_tau" joint="right_hip_pitch"/>
-      <jointactuatorfrc name="right_knee_tau" joint="right_knee"/>
-      <jointactuatorfrc name="right_ankle_tau" joint="right_ankle"/>
-
-    <!-- need to link below to a site, rabbit imu is at CoM. use imu from trunk assembly -->
+      <jointactuatorfrc name="right_hip_tau" joint="right_hip_ry"/>
+      <jointactuatorfrc name="right_knee_tau" joint="right_knee_ry"/>
+      <jointactuatorfrc name="left_hip_tau" joint="left_hip_ry"/>
+      <jointactuatorfrc name="left_knee_tau" joint="left_knee_ry"/>
+    <!-- need to link below to a site, rabbit imu is at CoM -->
       <framequat name="imu_quat" objtype="site" objname="imu" noise="0.01"/>
       <gyro name="imu_gyro" site="imu" noise="0.01"/>
       <accelerometer name="imu_acc" site="imu" noise="0.01"/>
