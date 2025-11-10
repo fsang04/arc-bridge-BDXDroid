@@ -121,7 +121,6 @@ class Lcm2MujocoBridge:
         if self.mj_data is None:
             return -1
 
-        # Motors (5 each leg -> 10 total)
         # Assume each joint has a position, velocity, and torque sensor
         for i in range(self.num_motor):
             self.low_state.qj_pos[i] = self.mj_data.sensordata[i] + self.joint_offsets[i] \
