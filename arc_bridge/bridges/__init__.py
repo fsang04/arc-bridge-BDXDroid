@@ -9,3 +9,4 @@ from .tron1_linefoot_bridge import Tron1LinefootBridge
 from .pendulum_bridge import PendulumBridge
 from .sliding_bridge import SlidingBridge
 from .rabbit_bridge import RabbitBridge
+from .bdx_droid_bridge import BdxDroidBridge

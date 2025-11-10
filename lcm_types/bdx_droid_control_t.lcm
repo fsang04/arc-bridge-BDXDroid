@@ -1,0 +1,20 @@
+package lcm_msgs;
+
+struct bdx_droid_control_t
+{
+    int64_t  timestamp;
+
+    double   qj_tau[10]; // N = 10 actuated joints
+
+    double   qj_pos[10];
+    double   qj_vel[10];
+
+    double   kp[10];
+    double   kd[10];
+
+    boolean  reset_se; // biped point foot    
+
+    double se_pos[3]; // rabbit, for state estimator?
+    double se_vel[3];
+    double EA[3];
+}

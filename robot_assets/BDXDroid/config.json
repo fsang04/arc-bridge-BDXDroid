@@ -1,0 +1,94 @@
+{
+    "url": "https://cad.onshape.com/documents/64074dfcfa379b37d8a47762/w/3650ab4221e215a4f65eb7fe/e/0505c262d882183a25049d05",
+    "output_format": "mujoco",
+
+    "output_filename": "bdx_droid_model",
+    "assets_directory": "assets",
+
+    "configuration": "default",
+    "robot_name": "bdx_droid_model",
+
+    "ignore_limits": false,
+    "ignore": {
+    },
+    "draw_frames": false,
+
+    "no_dynamics": false,
+    "include_configuration_suffix": true,
+    "post_import_commands": [
+        "echo 'Import done'",
+        "echo 'Do something else'"
+    ],
+
+    "joint_properties": {
+        "left_hip_yaw": {
+            "actuated": true,
+            "forcerange": 10.0,
+            "frictionloss": 0.5,
+            "limits": [0.5, 1.2]
+        },
+        "left_hip_roll": {
+            "actuated": true,
+            "forcerange": 10.0,
+            "frictionloss": 0.5,
+            "limits": [0.5, 1.2]
+        },
+        "left_hip_pitch": {
+            "actuated": true,
+            "forcerange": 10.0,
+            "frictionloss": 0.5,
+            "limits": [0.5, 1.2]
+        },
+        "left_knee": {
+            "actuated": true,
+            "forcerange": 10.0,
+            "frictionloss": 0.5,
+            "limits": [0.5, 1.2]
+        },
+        "left_ankle": {
+            "actuated": true,
+            "forcerange": 10.0,
+            "frictionloss": 0.5,
+            "limits": [0.5, 1.2]
+        },
+
+        "right_hip_yaw": {
+            "actuated": true,
+            "forcerange": 10.0,
+            "frictionloss": 0.5,
+            "limits": [0.5, 1.2]
+        },
+        "right_hip_roll": {
+            "actuated": true,
+            "forcerange": 10.0,
+            "frictionloss": 0.5,
+            "limits": [0.5, 1.2]
+        },
+        "right_hip_pitch": {
+            "actuated": true,
+            "forcerange": 10.0,
+            "frictionloss": 0.5,
+            "limits": [0.5, 1.2]
+        },
+        "right_knee": {
+            "actuated": true,
+            "forcerange": 10.0,
+            "frictionloss": 0.5,
+            "limits": [0.5, 1.2]
+        },
+        "right_ankle": {
+            "actuated": true,
+            "forcerange": 10.0,
+            "frictionloss": 0.5,
+            "limits": [0.5, 1.2]
+        },
+        
+        "neck_pitch": { "class": "virtual_joint" },
+        "head_pitch": { "class": "virtual_joint" },
+        "head_yaw": { "class": "virtual_joint" },
+        "head_roll": { "class": "virtual_joint" }
+    },
+
+    "equalities": {
+    }
+}

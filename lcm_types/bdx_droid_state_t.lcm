@@ -1,0 +1,47 @@
+package lcm_msgs;
+
+struct bdx_droid_state_t
+{
+    int64_t  timestamp;
+
+    // NOTE: check floating base DoF
+    // -----------------------------------------
+    // floating base pose
+    double   position[3];
+    double   quaternion[4];
+    double   rpy[3];
+
+    // floating base task space
+    double   acceleration[3];
+    double   velocity[3];
+    double   omega[3];
+
+    // N = 10 actuated joints
+    double   qj_pos[10];
+    double   qj_vel[10];
+    double   qj_tau[10];
+
+    // point foot -> don't need for SLIP?
+    double   foot_force[2];
+
+    // can get mass matrix from spatial v2? 
+    // NOTE: check whether floating base should be freejoint (6 DoF) or rabbit 3 DoF
+    // floating base has 6 dof, 6 + N actuated joints = 16
+    // -----------------------------------------
+    double   inertia_mat[16][16]; 
+    double   bias_force[16];
+
+    // store everything in general 3D convention
+    // NOTE: check floating base DoF
+    // -----------------------------------------
+    // [v_world, w_body, qj_vel] -> [v_world, w_world]
+    double   J_tor[6][16]
+    double   dJdq_tor[6];
+
+    // [v_world, w_body, qj_vel] -> [v_right_foot_world, v_left_foot_world]
+    double   J_gc[6][16];
+    double   dJdq_gc[6];
+
+    // [p_right_foot_world, p_left_foot_world]
+    double   p_gc[6];
+}

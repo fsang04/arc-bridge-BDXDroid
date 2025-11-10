@@ -87,7 +87,7 @@ if __name__ == "__main__":
         lc_cmd = pendulum_control_t()
         lc_cmd.timestamp = time.time_ns()
         lc_cmd.qj_tau = dof_torque.tolist()
-        # Enable low-level joint PD control
+        # Enable low-level joint PD control ##### UNCOMMENT THIS TO TEST #####
         # lc_cmd.qj_pos = dof_pos.tolist()
         # lc_cmd.qj_vel = [0.0]
         # lc_cmd.kp = controller.kp.tolist()
