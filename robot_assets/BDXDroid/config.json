@@ -83,10 +83,10 @@
             "limits": [0.5, 1.2]
         },
         
-        "neck_pitch": { "class": "virtual_joint" },
-        "head_pitch": { "class": "virtual_joint" },
-        "head_yaw": { "class": "virtual_joint" },
-        "head_roll": { "class": "virtual_joint" }
+        "neck_pitch": { "actuated": false },
+        "head_pitch": { "actuated": false },
+        "head_yaw": { "actuated": false },
+        "head_roll": { "actuated": false }
     },
 
     "equalities": {
