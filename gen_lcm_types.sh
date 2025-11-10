@@ -66,7 +66,7 @@ lcm-gen -x $LCM_TYPE_PATH/*.lcm --cpp-hpath $LCM_GEN_DES_PATH
 # Compile java types
 echo "Compiling generated Java types"
 # java release 8 is used for compatability of MATLAB >= 2023b
-javac -cp $LCM_JAR_PATH $LCM_PKG_PATH/*.java --release 11 # CHANGED TO JDK 11
+javac -cp $LCM_JAR_PATH $LCM_PKG_PATH/*.java --release 8 # CHANGED TO JDK 8
 if [ $? != 0 ]; then
     echo "Error: Java types' compilation failed."
 fi

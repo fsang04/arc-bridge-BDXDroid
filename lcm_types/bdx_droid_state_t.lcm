@@ -35,7 +35,7 @@ struct bdx_droid_state_t
     // NOTE: check floating base DoF
     // -----------------------------------------
     // [v_world, w_body, qj_vel] -> [v_world, w_world]
-    double   J_tor[6][16]
+    double   J_tor[6][16];
     double   dJdq_tor[6];
 
     // [v_world, w_body, qj_vel] -> [v_right_foot_world, v_left_foot_world]
