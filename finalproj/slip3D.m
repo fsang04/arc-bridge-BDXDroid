@@ -26,10 +26,10 @@ params.M = 80; % mass (kg)
 params.g = [0; 0; -9.81];
 params.l0 = 1.0;            % rest spring leg length, at TD l0 = lh
 params.lh = 1.0;            % get from xml - humanoid virtual leg length used to map to SLIP leg
-params.yhip = 0.0;          % 0 for now for testing - hip offset in y-dir. nominal val is torso width/2
+params.yhip = 0.1;          % 0 for now for testing - hip offset in y-dir. nominal val is torso width/2
 params.th0 = deg2rad(24);   % init TD angle guess
 params.ks0 = 6000;
-params.tf = 5;              % single step time interval
+params.tf = 5.0;              % single step time interval
 % potential param to add: scaling param for phi (affects sagittal dir)
 
 % %% Main simulation loop
@@ -108,8 +108,8 @@ function out = hatMap(in) % not used
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [value, isterminal, direction] = flight_event(~, X, u, params) 
-% TD event: z pos = l_h * cos(th) (eq. 3)
+function [value, isterminal, direction] = TDevent(~, X, u, params) 
+% TD event: z pos = l_h * cos(th) = 0 (eq. 3)
     ps = X(1:3);
     l0 = params.l0;
     th = u(1);
@@ -118,17 +118,25 @@ function [value, isterminal, direction] = flight_event(~, X, u, params)
     direction = -1;
 end
 
-function [value, isterminal, direction] = stance_events(~, X, params, pf)
-% two events to check for during stance:
-% 1. max compression: l' * v = 0 and ||l|| < l0
-% 2. LO event: when leg returns to rest length (eq. 4)
+function [value, isterminal, direction] = MCevent(~, X, pf)
+% event during 1st stance phase
+% max compression event: l' * v = 0
     ps = X(1:3);
     vs = X(4:6);
     l = ps - pf;
+    value = l.' * vs;
+    isterminal = 1; % currently terminating after max compression (could change)
+    direction = 0;
+end
 
-    value = [l.' * vs; norm(l) - params.l0];
-    isterminal = [1; 1]; % currently terminating after max compression (could change)
-    direction = [0; 1];
+function [value, isterminal, direction] = LOevent(~, X, params, pf)
+% event during 2nd stance phase
+% LO event: ||l|| - l0 = 0, when leg returns to rest length (eq. 4)
+    ps = X(1:3);
+    l = ps - pf;
+    value = norm(l) - params.l0;
+    isterminal = 1; 
+    direction = 1;
 end
 
 % NOTE: could add apex event where vertical velocity X(6) = 0 
@@ -147,13 +155,13 @@ function [X1, t_TD, t_LO] = slip_return_map(X, u, params)
     pf = get_TD_pos(X, u, params);
     tf = params.tf;
 
-    opts_flight = odeset('RelTol',1e-6,'AbsTol',1e-8,'Events',@(t,X) flight_event(t,X,u,params)); % while in flight, detect for TD
-    opts_stance = odeset('RelTol',1e-6,'AbsTol',1e-8,'Events',@(t,X) stance_events(t,X,params,pf)); % while in stance, detect for LO
+    opts_flight = odeset('RelTol',1e-6,'AbsTol',1e-8,'Events',@(t,X) TDevent(t,X,u,params)); % while in flight, detect for TD
+    opts_compression = odeset('RelTol',1e-6,'AbsTol',1e-8,'Events',@(t,X) MCevent(t,X,pf)); % while in stance, detect for MC
+    opts_extension = odeset('RelTol',1e-6,'AbsTol',1e-8,'Events',@(t,X) LOevent(t,X,params,pf)); % while in stance, detect for LO
     
+    % fprintf('θ = %.2f deg | cos(θ) = %.3f | l0*cos(θ) = %.3f | initial height h0 = %.3f\n', ...
+    %     rad2deg(u(1)), cos(u(1)), params.l0*cos(u(1)), X(1)); % debug to check that apex is higher than TD expression
     % phase 1 - flight: apex to TD
-    fprintf('θ = %.2f deg | cos(θ) = %.3f | l0*cos(θ) = %.3f | initial height h0 = %.3f\n', ...
-        rad2deg(u(1)), cos(u(1)), params.l0*cos(u(1)), X(1)); % debug
-
     [t1, X1, te1, Xe1] = ode45(@(t,X) dynamics_SLIP(t,X,'flight',params,pf,ks1), [0 tf], X0, opts_flight); % ks input doenst matter
     if isempty(te1)               
         fprintf('No TD detected during first flight phase'); % debug
@@ -162,15 +170,15 @@ function [X1, t_TD, t_LO] = slip_return_map(X, u, params)
     else
         t_TD = te1;
     end
-    fprintf('Phase 1 integration time span: [%.6f, %.6f]\n', 0, t1(end));
-    fprintf('Final leg length: %.6f m\n', norm(X1(end,1:3) - pf'));
-    fprintf('Final leg length rate (l''·v): %.6f\n', dot(X1(end,1:3) - pf', X1(end,4:6)));
-    fprintf('Spring stiffness ks1 = %.2f N/m\n', ks1);
-    fprintf('State at end of stance:\n');
-    disp(X1(end,:));
+    % fprintf('Phase 1 integration time span: [%.6f, %.6f]\n', 0, t1(end));
+    % fprintf('Final leg length: %.6f m\n', norm(X1(end,1:3) - pf'));
+    % fprintf('Final leg length rate (l''·v): %.6f\n', dot(X1(end,1:3) - pf', X1(end,4:6)));
+    % fprintf('Spring stiffness ks1 = %.2f N/m\n', ks1);
+    % fprintf('State at end of stance:\n');
+    % disp(X1(end,:));
 
     % phase 2 - stance: TD to max compression (ks1)
-    [t2, X2, te2, Xe2] = ode45(@(t,X) dynamics_SLIP(t,X,'stance',params,pf,ks1), [t1(end) tf], Xe1, opts_stance); % use t1(end) to ensure continuity
+    [t2, X2, te2, Xe2] = ode45(@(t,X) dynamics_SLIP(t,X,'stance',params,pf,ks1), [t1(end) tf], Xe1, opts_compression); % use t1(end) to ensure continuity
     if isempty(te2)
         fprintf('No max compression detected during stance phase\n'); % debug
         fprintf('Phase 2 integration time span: [%.6f, %.6f]\n', t1(end), tf);
@@ -185,7 +193,7 @@ function [X1, t_TD, t_LO] = slip_return_map(X, u, params)
     % NOTE: could consider not terminating after max compression and having this 
     % under an if conditional while tuning ks values
     % phase 3 - stance: max compression to LO (ks2)
-    [t3, X3, te3, Xe3] = ode45(@(t,X) dynamics_SLIP(t,X,'stance',params,pf,ks2), [t2(end) tf], Xe2, opts_stance);
+    [t3, X3, te3, Xe3] = ode45(@(t,X) dynamics_SLIP(t,X,'stance',params,pf,ks2), [t2(end) tf], Xe2, opts_extension);
     if isempty(te3)
         fprintf('No LO detected during stance phase'); % debug
         Xe3 = X3(end,:)';
@@ -193,7 +201,8 @@ function [X1, t_TD, t_LO] = slip_return_map(X, u, params)
     else
         t_LO = te3;
     end
-    
+    te3
+    Xe3 
     % phase 4 - flight: LO to apex
     [t4, X4] = ode45(@(t,X) dynamics_SLIP(t,X,'flight',params,pf,ks2), [t3(end) tf], Xe3, opts_flight); % ks input doesnt matter
     
