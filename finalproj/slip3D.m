@@ -25,16 +25,16 @@ steps = 1000; % Tot steps for the simulation
 params.M = 80; % mass (kg)
 params.g = [0; 0; -9.81];
 params.l0 = 1.0;            % rest spring leg length, at TD l0 = lh
-params.lh = 1.0;            % get from xml - humanoid virtual leg length used to map to SLIP leg
+params.lh = 1.1;            % get from xml - humanoid virtual leg length used to map to SLIP leg
 params.yhip = 0.1;          % 0 for now for testing - hip offset in y-dir. nominal val is torso width/2
 params.th0 = deg2rad(24);   % init TD angle guess
-params.ks0 = 6000;
-params.tf = 5.0;              % single step time interval
+params.ks0 = 6000;          % init stiffness guess
+params.tf = 5.0;            % single step time interval
 % potential param to add: scaling param for phi (affects sagittal dir)
 
 % %% Main simulation loop
-% initial apex state [h, vx, vy]
-X0 = [2.0; 3.5; 0];
+% initial apex state guess [h, vx, vy]
+X0 = [2.0; 3.5; 0];  
 
 % optimize for periodic gait timings
 fprintf('Finding periodic gait...\n');
@@ -50,14 +50,14 @@ fprintf('  ks2 = %.2f N/m\n', u0_star(4));
 fprintf('--------------------------------------------------\n');
 
 % simulate
-N = 5; % number of steps
+N = 6; % number of steps
 X0 = X0_star;
 traj = zeros(3, N);
 fprintf('Starting simulation...\n');
 for n = 1:N
     K = compute_deadbeat(X0_star, u0_star, params);
-    u = u0_star + K * (X0 - X0_star);
-    [X1, t_TD, t_LO] = slip_return_map(X0, u, params);
+    u = u0_star + K * (X0 - X0_star);                   % eq 19
+    [X1, t_TD, t_LO] = slip_return_map(X0, u, params);  % step forward with adjusted control
     traj(:, n) = X0;
     X0 = X1;
 end
@@ -68,7 +68,7 @@ fprintf('Simulation complete.\n');
 function pf = get_TD_pos(X, u, params)
 % eq. 3
 % return: foot pos as TD happens
-% input: X = [h; vx; vy]
+% input: X = [h; vx; vy]. NOT full slip state
     h = X(1);
     theta = u(1);
     phi = u(2);
@@ -82,14 +82,15 @@ function pf = get_TD_pos(X, u, params)
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function dX = dynamics_SLIP(~, X, phase, params, pf, ks) % time not relevant
+function dX = dynamics_SLIP(~, Xs, phase, params, pf, ks) % time not relevant
+% Xs = full slip state
 % pf = foot pos at most recent TD (to allow for both flight/stance scenarios)
 % ks = will be ks1 before max compression, ks2 after max compression
     M = params.M;
     g = params.g; 
     l0 = params.l0;
-    p = X(1:3);
-    pd = X(4:6);
+    p = Xs(1:3);
+    pd = Xs(4:6);
     if strcmp(phase,'flight')   % ballistic dynamics
         dX = [pd; g];
     else                        % stance dynamics: eq. 2
@@ -108,31 +109,33 @@ function out = hatMap(in) % not used
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [value, isterminal, direction] = TDevent(~, X, u, params) 
+% mental note: Xs passed into these must be the full slip state (ps, psd)
+function [value, isterminal, direction] = TDevent(~, Xs, u, params) 
 % TD event: z pos = l_h * cos(th) = 0 (eq. 3)
-    ps = X(1:3);
-    l0 = params.l0;
+    ps = Xs(1:3);
+    lh = params.lh;
     th = u(1);
-    value = ps(3) - l0 * cos(th); 
+    % fprintf('Xs(3) = %.2f, lh*cos(th) = %.2f\n', Xs(3),params.lh * cos(th));
+    value = ps(3) - lh * cos(th); 
     isterminal = 1;
     direction = -1;
 end
 
-function [value, isterminal, direction] = MCevent(~, X, pf)
+function [value, isterminal, direction] = MCevent(~, Xs, pf)
 % event during 1st stance phase
 % max compression event: l' * v = 0
-    ps = X(1:3);
-    vs = X(4:6);
+    ps = Xs(1:3);
+    vs = Xs(4:6);
     l = ps - pf;
     value = l.' * vs;
     isterminal = 1; % currently terminating after max compression (could change)
     direction = 0;
 end
 
-function [value, isterminal, direction] = LOevent(~, X, params, pf)
+function [value, isterminal, direction] = LOevent(~, Xs, params, pf)
 % event during 2nd stance phase
 % LO event: ||l|| - l0 = 0, when leg returns to rest length (eq. 4)
-    ps = X(1:3);
+    ps = Xs(1:3);
     l = ps - pf;
     value = norm(l) - params.l0;
     isterminal = 1; 
@@ -148,24 +151,30 @@ function [X1, t_TD, t_LO] = slip_return_map(X, u, params)
 % u = [th; phi; ks1; ks2]
 % ks1 = during compression
 % ks2 = during extension
+   
     h = X(1); vx = X(2); vy = X(3);
-    X0 = [0; 0; h; vx; vy; 0]; % expand into full SLIP state to pass into dynamics
+    Xs0 = [0; 0; h; vx; vy; 0]; % expand into full SLIP state to pass into event functions / dynamics
     ks1 = u(3);
     ks2 = u(4);
     pf = get_TD_pos(X, u, params);
     tf = params.tf;
 
-    opts_flight = odeset('RelTol',1e-6,'AbsTol',1e-8,'Events',@(t,X) TDevent(t,X,u,params)); % while in flight, detect for TD
-    opts_compression = odeset('RelTol',1e-6,'AbsTol',1e-8,'Events',@(t,X) MCevent(t,X,pf)); % while in stance, detect for MC
-    opts_extension = odeset('RelTol',1e-6,'AbsTol',1e-8,'Events',@(t,X) LOevent(t,X,params,pf)); % while in stance, detect for LO
+    opts_flight = odeset('RelTol',1e-6,'AbsTol',1e-8,'Events',@(t,Xs) TDevent(t,Xs,u,params)); % while in flight, detect for TD
+    opts_compression = odeset('RelTol',1e-6,'AbsTol',1e-8,'Events',@(t,Xs) MCevent(t,Xs,pf)); % while in stance, detect for MC
+    opts_extension = odeset('RelTol',1e-6,'AbsTol',1e-8,'Events',@(t,Xs) LOevent(t,Xs,params,pf)); % while in stance, detect for LO
     
-    % fprintf('θ = %.2f deg | cos(θ) = %.3f | l0*cos(θ) = %.3f | initial height h0 = %.3f\n', ...
-    %     rad2deg(u(1)), cos(u(1)), params.l0*cos(u(1)), X(1)); % debug to check that apex is higher than TD expression
+    % fprintf('θ = %.2f deg | cos(θ) = %.3f | lh*cos(θ) = %.3f | initial height h0 = %.3f\n', ...
+    %     rad2deg(u(1)), cos(u(1)), params.lh*cos(u(1)), X(1)); % debug to check that apex is higher than TD expression
+    % fprintf('Initial COM height h0 = %.2f\n', Xs0(3));
+    % fprintf('Rest leg length lh = %.2f\n', params.lh);
+    % fprintf('Expected TD height (lh*cos(th)) = %.2f\n', params.lh*cos(u(1)));
+    % fprintf('Gravity vector = [%.2f %.2f %.2f]\n', params.g);
+
     % phase 1 - flight: apex to TD
-    [t1, X1, te1, Xe1] = ode45(@(t,X) dynamics_SLIP(t,X,'flight',params,pf,ks1), [0 tf], X0, opts_flight); % ks input doenst matter
+    [t1, Xs1, te1, Xe1] = ode45(@(t,Xs) dynamics_SLIP(t,Xs,'flight',params,pf,ks1), [0 tf], Xs0, opts_flight); % ks input doenst matter
     if isempty(te1)               
         fprintf('No TD detected during first flight phase'); % debug
-        Xe1 = X1(end,:)';   % safeguard: just take last value to prevent crash
+        Xe1 = Xs1(end,:)';   % safeguard: just take last value to prevent crash
         t_TD = t1(end);
     else
         t_TD = te1;
@@ -178,37 +187,36 @@ function [X1, t_TD, t_LO] = slip_return_map(X, u, params)
     % disp(X1(end,:));
 
     % phase 2 - stance: TD to max compression (ks1)
-    [t2, X2, te2, Xe2] = ode45(@(t,X) dynamics_SLIP(t,X,'stance',params,pf,ks1), [t1(end) tf], Xe1, opts_compression); % use t1(end) to ensure continuity
+    [t2, Xs2, te2, Xe2] = ode45(@(t,Xs) dynamics_SLIP(t,Xs,'stance',params,pf,ks1), [t1(end) tf], Xe1, opts_compression); % use t1(end) to ensure continuity
     if isempty(te2)
         fprintf('No max compression detected during stance phase\n'); % debug
         fprintf('Phase 2 integration time span: [%.6f, %.6f]\n', t1(end), tf);
-        fprintf('Final leg length: %.6f m\n', norm(X2(end,1:3) - pf'));
-        fprintf('Final leg length rate (l''·v): %.6f\n', dot(X2(end,1:3) - pf', X2(end,4:6)));
+        fprintf('Final leg length: %.6f m\n', norm(Xs2(end,1:3) - pf'));
+        fprintf('Final leg length rate (l''·v): %.6f\n', dot(Xs2(end,1:3) - pf', Xs2(end,4:6)));
         fprintf('Spring stiffness ks1 = %.2f N/m\n', ks1);
         fprintf('State at end of stance:\n');
-        disp(X2(end,:));
-        Xe2 = X2(end,:)';
+        disp(Xs2(end,:));
+        Xe2 = Xs2(end,:)';
     end
 
     % NOTE: could consider not terminating after max compression and having this 
     % under an if conditional while tuning ks values
     % phase 3 - stance: max compression to LO (ks2)
-    [t3, X3, te3, Xe3] = ode45(@(t,X) dynamics_SLIP(t,X,'stance',params,pf,ks2), [t2(end) tf], Xe2, opts_extension);
+    [t3, Xs3, te3, Xe3] = ode45(@(t,X) dynamics_SLIP(t,X,'stance',params,pf,ks2), [t2(end) tf], Xe2, opts_extension);
     if isempty(te3)
         fprintf('No LO detected during stance phase'); % debug
-        Xe3 = X3(end,:)';
+        Xe3 = Xs3(end,:)';
         t_LO = t3(end);
     else
         t_LO = te3;
     end
-    te3
-    Xe3 
+    
     % phase 4 - flight: LO to apex
-    [t4, X4] = ode45(@(t,X) dynamics_SLIP(t,X,'flight',params,pf,ks2), [t3(end) tf], Xe3, opts_flight); % ks input doesnt matter
+    [t4, Xs4] = ode45(@(t,X) dynamics_SLIP(t,X,'flight',params,pf,ks2), [t3(end) tf], Xe3, opts_flight); % ks input doesnt matter
     
     % could replace this if add apex event detection function
-    [~, idx] = max(X4(:,3)); % apex idx = max z pos of second flight phase
-    apex = X4(idx,:);        % find xyz pos at apex idx 
+    [~, idx] = max(Xs4(:,3)); % apex idx = max z pos of second flight phase
+    apex = Xs4(idx,:);        % find xyz pos at apex idx 
     
     X1 = [apex(3); apex(4); apex(5)]; % convert back into simplified apex state
 end
@@ -217,10 +225,12 @@ end
 function [X0_star, u0_star] = find_periodic_gait(X0, params)
 % solve LS problem to get (X0*, u0*) optimal state-control pair that
 % achieves desired gait timings given a desired forward vel vx
-    % initial decision var guess
-    z0 = [2.0; 0.0; params.ks0; params.th0];
+% X0 = [h0; vx; vy0]
+% decision variables (z): [h0, vy0, ks, th]
+
+    z0 = [X0(1); X0(3); params.ks0; params.th0]; % initial guess (apex)
     vx = X0(2); % this is kept constant
-    fun = @(z) periodic_cost(z, vx, params); % decision variables (z): [h0, vy0, ks, th]
+    fun = @(z) periodic_cost(z, vx, params); 
     % need max iterations?
     options = optimoptions('lsqnonlin','Display','iter','MaxFunEvals',2000,'TolX',1e-8);
     % consider upper and lower bounds
