@@ -77,7 +77,7 @@ cd ..
 
 # Find the latest MATLAB preference folder
 if [[ -d "$MATLAB_PREF_DIR_BASE" ]]; then
-    MATLAB_LATEST_PREF_DIR=$(ls -d "$MATLAB_PREF_DIR_BASE"/R* 2>/dev/null | sort -V | tail -n 1)
+    MATLAB_LATEST_PREF_DIR="$MATLAB_PREF_DIR_BASE/R2025a"
 
     if [[ -z "$MATLAB_LATEST_PREF_DIR" ]]; then
         echo "No MATLAB preference folder found. Skipping MATLAB configuration."
