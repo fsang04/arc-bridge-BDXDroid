@@ -56,7 +56,7 @@ for i = 1:length(vx_range)
     fprintf('  φ     = %.3f deg\n', rad2deg(u0_star(2)));
     fprintf('--------------------------------------------------\n');
 
-    K = compute_deadbeat(X0_star, u0_star, params)
+    K = compute_deadbeat(X0_star, u0_star, params);
     
     X0_stars(:,i) = X0_star;
     u0_stars(:,i) = u0_star;
@@ -68,20 +68,37 @@ fprintf('\nGait library generation complete.\nSaved to SLIP3D_gait_library.mat\n
 % %% Main simulation loop
 % simulate
 N = 5; % number of steps
-X0 = X0_star;
+X0 = [2.0; 3.5; 0]; % actual init guess. needs to be close to init guess in gait library generation -> weakness in optimization?
 traj = zeros(3, N);
 fprintf('Starting simulation...\n');
 for n = 1:N
     % retrieve closest K corresponding to vx from "library":
     fprintf('Retrieving from library...\n');
+    fprintf('Step %d: X0 = [%.4f, %.4f, %.4f] (h, vx, vy)\n', n, X0(1), X0(2), X0(3));
     vx_curr = X0(2);
     [~, idx] = min(abs(vx_range - vx_curr));
     X0_star = X0_stars(:,idx);
     u0_star = u0_stars(:,idx);
     K = K_all{idx};
+    fprintf('  K ='); disp(K);
+    fprintf('  X0_star = [%.4f, %.4f, %.4f], error = [%.4f, %.4f, %.4f]\n', ...
+            X0_star(1), X0_star(2), X0_star(3), ...
+            X0(1)-X0_star(1), X0(2)-X0_star(2), X0(3)-X0_star(3));
+    fprintf('  u0_star = [%.4f, %.4f, %.4f, %.4f]\n', ...
+            u0_star(1), u0_star(2), u0_star(3), u0_star(4));
 
     u = u0_star + K * (X0 - X0_star);                  % eq 19
-    [X1, t_TD, t_LO] = slip_return_map(X0, u, params);  % integrate one step forward with adjusted control
+    
+    % bound u values to be physically reasonable
+    u(1) = max(deg2rad(8), min(deg2rad(35), u(1)));  % th: 8-35 deg
+    u(2) = max(deg2rad(-30), min(deg2rad(30), u(2))); % phi: ±30 deg
+    u(3) = max(1000, min(50000, u(3))); 
+    u(4) = max(1000, min(50000, u(4)));
+
+    fprintf('  u clipped = [%.4f, %.4f, %.0f, %.0f]\n', ...
+            u(1), u(2), u(3), u(4));
+    [X1, t_TD, t_LO, ~] = slip_return_map(X0, u, params);  % integrate one step forward with adjusted control
+    fprintf('  X1 = [%.4f, %.4f, %.4f]\n', X1(1), X1(2), X1(3));
     traj(:, n) = X0;
     X0 = X1;
 end
@@ -169,12 +186,13 @@ end
 % NOTE: could add apex event where vertical velocity X(6) = 0 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [X1, t_TD, t_LO] = slip_return_map(X, u, params)
+function [X1, t_TD, t_LO, valid_gait] = slip_return_map(X, u, params)
 % 4 phase integration of 1 step from X0 to X1 (apex to apex)
 % returns next apex state X1, and t_TD/t_LO for cost function
 % u = [th; phi; ks1; ks2]
 % ks1 = during compression
 % ks2 = during extension
+% valid_gait: flag indicating if all events (TD, MC, LO) were detected
    
     h = X(1); vx = X(2); vy = X(3);
     Xs0 = [0; 0; h; vx; vy; 0]; % expand into full SLIP state to pass into event functions / dynamics
@@ -182,6 +200,9 @@ function [X1, t_TD, t_LO] = slip_return_map(X, u, params)
     ks2 = u(4);
     pf = get_TD_pos(X, u, params);
     tf = params.tf;
+    
+    % init as true, will be false if any event is missed
+    valid_gait = true;
 
     opts_flight = odeset('RelTol',1e-6,'AbsTol',1e-8,'Events',@(t,Xs) TDevent(t,Xs,u,params)); % while in flight, detect for TD
     opts_compression = odeset('RelTol',1e-6,'AbsTol',1e-8,'Events',@(t,Xs) MCevent(t,Xs,pf)); % while in stance, detect for MC
@@ -200,6 +221,7 @@ function [X1, t_TD, t_LO] = slip_return_map(X, u, params)
         fprintf('No TD detected during first flight phase'); % debug
         Xe1 = Xs1(end,:)';   % safeguard: just take last value to prevent crash
         t_TD = t1(end);
+        valid_gait = false;  % TD not detected - invalid gait
     else
         t_TD = te1;
     end
@@ -221,6 +243,7 @@ function [X1, t_TD, t_LO] = slip_return_map(X, u, params)
         fprintf('State at end of stance:\n');
         disp(Xs2(end,:));
         Xe2 = Xs2(end,:)';
+        valid_gait = false;  % Max compression not detected - invalid gait
     end
 
     % NOTE: could consider not terminating after max compression and having this 
@@ -229,10 +252,15 @@ function [X1, t_TD, t_LO] = slip_return_map(X, u, params)
     [t3, Xs3, te3, Xe3] = ode45(@(t,X) dynamics_SLIP(t,X,'stance',params,pf,ks2), [t2(end) tf], Xe2, opts_extension);
     if isempty(te3)
         fprintf('No LO detected during stance phase'); % debug
-        leg_length_final = norm(Xs3(end,1:3)' - pf);
+        ps_final = Xs3(end,1:3)';
+        leg_length_final = norm(ps_final - pf);
         fprintf('  Final leg length: %.4f m (l0=%.4f m), diff=%.4f m\n', leg_length_final, params.l0, leg_length_final - params.l0);
-        Xe3 = Xs3(end,:)'
+        fprintf('  Final CoM position: [%.4f, %.4f, %.4f]\n', ps_final(1), ps_final(2), ps_final(3));
+        fprintf('  Foot position pf: [%.4f, %.4f, %.4f]\n', pf(1), pf(2), pf(3));
+        fprintf('  Initial CoM at step start: [0, 0, %.4f]\n', h);
+        Xe3 = Xs3(end,:)';
         t_LO = t3(end);
+        valid_gait = false;  % LO not detected - invalid gait
     else
         t_LO = te3;
     end
@@ -259,10 +287,9 @@ function [X0_star, u0_star] = find_periodic_gait(X0, params)
     fun = @(z) periodic_cost(z, vx, params); 
     % need max iterations?
     options = optimoptions('lsqnonlin','Display','iter','MaxFunEvals',2000,'TolX',1e-8);
-    
-    (* % z = [h0, vy0, ks, th]
-    lb = [1.5; -1.0; 4000; deg2rad(8)];             % lower bound (adjusted for l0=1.0, lh=1.1)
-    ub = [2.5; 1.0; 50000; deg2rad(35)];            % upper bound *)
+    % z = [h0, vy0, ks, th]
+    lb = [0.92; -1.0; 4000; deg2rad(8)];            % lower bound (adjusted for l0=1.0, lh=1.1)
+    ub = [2.5; 1.0; 50000; deg2rad(35)];            % upper bound
     sol = lsqnonlin(fun,z0,lb,ub,options); % sol = [h0*, vy0*, ks*, th*]
     
     X0_star = [sol(1); vx; sol(2)];
@@ -280,14 +307,14 @@ function err = periodic_cost(z, vx, params)
     u0 = [th; 0; ks; ks];   % eq. 15
 
     A = diag([1 1 -1]);     % eq. 8
-    [X1, t_TD, t_LO] = slip_return_map(X0, u0, params); % symbolically integrate one step forward
+    [X1, t_TD, t_LO, valid_gait] = slip_return_map(X0, u0, params); % symbolically integrate one step forward
     Tdes = get_des_gait_timings(X0); 
     Tcurr = [t_TD; t_LO];   % eq. 12
     
     err = [A*X0 - X1; Tdes - Tcurr]; % eq. 13
     
-    % Add large penalty if LO was not detected (invalid gait)
-    if ~LO_detected
+    % Add large penalty if any critical event (TD, MC, or LO) was not detected
+    if ~valid_gait
         err = err + 100 * ones(size(err)); % Large penalty to discourage invalid gaits
     end
     
@@ -328,5 +355,34 @@ function K = compute_deadbeat(X0_star, u0_star, params)
         um = u0_star; um(j)=um(j)-du;
         Ju(:,j) = (slip_return_map(X0_star,up,params) - slip_return_map(X0_star,um,params))/(2*du);
     end
-    K = -pinv(Ju)*Jx;
+
+    % du = B * w where w = [dtheta; dphi; dks1]
+    B = [1  0  0;
+         0  1  0;
+         0  0  1;
+         0  0 -1];  % dks2 = -dks1
+
+    M = Ju * B;         % Ju * B * w = -Jx * dx, M is a reduced Ju 
+    % L = -pinv(M) * Jx;  % w = -inv(M) * Jx * dx, so L = -inv(M) * Jx
+    
+    % adaptive regularization
+    % cond_M = cond(M);
+    % if cond_M > 1e3
+    %     eps_reg = 1e-6;  % Larger regularization if ill-conditioned
+    % else
+    %     eps_reg = 1e-4;  % Smaller regularization if well-conditioned
+    % end
+    eps_reg = 1e-4;  % Start with this for cond(M) ~ 4000
+    L = -pinv(M + eps_reg * eye(3)) * Jx;
+
+    K = B * L;          % K = B * -inv(M) * Jx, ks1 row and ks2 row will be negatives
+    % K = -pinv(Ju)*Jx;
+
+    % debug: check condition
+    fprintf('Condition number of M: %.2e\n', cond(M));
+    fprintf('Rank of M: %d (should be 3)\n', rank(M));
+    fprintf('M columns:\n');
+    fprintf('  M(:,1) = Ju(:,1) (theta): [%.6f; %.6f; %.6f]\n', M(1,1), M(2,1), M(3,1));
+    fprintf('  M(:,2) = Ju(:,2) (phi):   [%.6f; %.6f; %.6f]\n', M(1,2), M(2,2), M(3,2));
+    fprintf('  M(:,3) = Ju(:,3)-Ju(:,4) (ks): [%.6f; %.6f; %.6f]\n', M(1,3), M(2,3), M(3,3));
 end
