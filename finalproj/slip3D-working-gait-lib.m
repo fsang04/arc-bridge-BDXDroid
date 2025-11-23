@@ -259,10 +259,10 @@ function [X0_star, u0_star] = find_periodic_gait(X0, params)
     fun = @(z) periodic_cost(z, vx, params); 
     % need max iterations?
     options = optimoptions('lsqnonlin','Display','iter','MaxFunEvals',2000,'TolX',1e-8);
-    % Add bounds to prevent invalid parameter combinations
-    % z = [h0, vy0, ks, th]
+    
+    (* % z = [h0, vy0, ks, th]
     lb = [1.5; -1.0; 4000; deg2rad(8)];             % lower bound (adjusted for l0=1.0, lh=1.1)
-    ub = [2.5; 1.0; 50000; deg2rad(35)];            % upper bound
+    ub = [2.5; 1.0; 50000; deg2rad(35)];            % upper bound *)
     sol = lsqnonlin(fun,z0,lb,ub,options); % sol = [h0*, vy0*, ks*, th*]
     
     X0_star = [sol(1); vx; sol(2)];
