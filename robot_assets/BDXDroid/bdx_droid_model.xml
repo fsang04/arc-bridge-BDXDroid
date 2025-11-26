@@ -28,7 +28,7 @@
       <joint name="x_joint" type="slide" axis="1 0 0" range="-100 100" class="virtual_joint"/>
       <joint name="z_joint" type="slide" axis="0 0 1" range="-100 100" class="virtual_joint"/>
       <joint name="pitch_joint" type="hinge" axis="0 1 0" class="virtual_joint"/>
-      <inertial pos="-0.0483259 -9.97823e-05 0.0384971" mass="0.698526" fullinertia="0.00167701 0.00344479 0.00292635 -1.31662e-05 -3.24953e-05 -2.15581e-06"/>
+      <inertial pos="-0.0483259 -9.97823e-05 0.0384971" mass="1.685713" fullinertia="0.00167701 0.00344479 0.00292635 -1.31662e-05 -3.24953e-05 -2.15581e-06"/>
       <!-- Part body_front -->
       <geom type="mesh" class="visual" pos="-0.019 0 0.0648909" quat="1 0 0 0" mesh="body_front" material="body_front_material"/>
       <geom type="mesh" class="collision" pos="-0.019 0 0.0648909" quat="1 0 0 0" mesh="body_front" material="body_front_material"/>
@@ -131,10 +131,13 @@
       <!-- attach sensors to this -->
       <site group="3" name="imu" pos="-0.08711 1.249e-16 0.0422909" quat="1 -7.03105e-17 -2.95172e-17 -2.25839e-16"/>
       <!-- Link hip_roll_assembly -->
+      <!-- =================================== -->
+      <!-- gave hip roll joints small range -->
+      <!-- =================================== -->
       <body name="hip_roll_assembly" pos="-0.019 0.035 0.0459409" quat="1 -2.84196e-16 -1.06878e-14 3.78703e-16">
         <!-- Joint from trunk_assembly to hip_roll_assembly -->
         <joint axis="0 0 1" name="left_hip_yaw" type="hinge" range="0.5 1.2" frictionloss="0.5"/>
-        <inertial pos="0.000795081 -5.46541e-06 -0.03306" mass="0.06648" fullinertia="2.44411e-05 2.81818e-05 1.42687e-05 2.35658e-09 -3.81059e-07 -7.50036e-09"/>
+        <inertial pos="0.000795081 -5.46541e-06 -0.03306" mass="0.039540" fullinertia="2.44411e-05 2.81818e-05 1.42687e-05 2.35658e-09 -3.81059e-07 -7.50036e-09"/>
         <!-- Part roll_motor_bottom -->
         <geom type="mesh" class="visual" pos="-3.36536e-16 -0.035 0.01905" quat="1 -4.38499e-16 2.22045e-16 -2.73988e-16" mesh="roll_motor_bottom" material="roll_motor_bottom_material"/>
         <geom type="mesh" class="collision" pos="-3.36536e-16 -0.035 0.01905" quat="1 -4.38499e-16 2.22045e-16 -2.73988e-16" mesh="roll_motor_bottom" material="roll_motor_bottom_material"/>
@@ -159,8 +162,9 @@
         <!-- Link left_roll_to_pitch_assembly -->
         <body name="left_roll_to_pitch_assembly" pos="0.01905 1.28994e-14 -0.046015" quat="0.5 -0.5 -0.5 0.5">
           <!-- Joint from hip_roll_assembly to left_roll_to_pitch_assembly -->
-          <joint axis="0 0 1" name="left_hip_roll" type="hinge" range="0.5 1.2" frictionloss="0.5"/>
-          <inertial pos="0.0507497 -0.000407512 0.0204377" mass="0.07516" fullinertia="2.52682e-05 4.15738e-05 2.82869e-05 1.22744e-07 -7.32857e-07 -1.05692e-07"/>
+          <!-- fix hip roll joints with small range, locked via equality constraint -->
+          <joint axis="0 0 1" name="left_hip_roll" type="hinge" range="-0.01 0.01" frictionloss="0.5"/>
+          <inertial pos="0.0507497 -0.000407512 0.0204377" mass="0.044703" fullinertia="2.52682e-05 4.15738e-05 2.82869e-05 1.22744e-07 -7.32857e-07 -1.05692e-07"/>
           <!-- Part left_roll_to_pitch -->
           <geom type="mesh" class="visual" pos="-0.035 -0.065 0.01905" quat="0.5 0.5 0.5 -0.5" mesh="left_roll_to_pitch" material="left_roll_to_pitch_material"/>
           <geom type="mesh" class="collision" pos="-0.035 -0.065 0.01905" quat="0.5 0.5 0.5 -0.5" mesh="left_roll_to_pitch" material="left_roll_to_pitch_material"/>
@@ -183,7 +187,7 @@
           <body name="knee_and_ankle_assembly" pos="0.07415 -6.01732e-18 0.03511" quat="3.24845e-15 0.707107 -4.66429e-15 -0.707107">
             <!-- Joint from left_roll_to_pitch_assembly to knee_and_ankle_assembly -->
             <joint axis="0 0 1" name="left_hip_pitch" type="hinge" range="0.5 1.2" frictionloss="0.5"/>
-            <inertial pos="0.00253369 -0.0390636 0.0102776" mass="0.12407" fullinertia="0.000211406 7.83759e-05 0.000225619 -2.68706e-05 3.81906e-06 2.08009e-05"/>
+            <inertial pos="0.00253369 -0.0390636 0.0102776" mass="0.073793" fullinertia="0.000211406 7.83759e-05 0.000225619 -2.68706e-05 3.81906e-06 2.08009e-05"/>
             <!-- Part left_cache -->
             <geom type="mesh" class="visual" pos="0.01606 0.065 0.10915" quat="0.707107 -0.707107 0 1.96262e-17" mesh="left_cache" material="left_cache_material"/>
             <geom type="mesh" class="collision" pos="0.01606 0.065 0.10915" quat="0.707107 -0.707107 0 1.96262e-17" mesh="left_cache" material="left_cache_material"/>
@@ -215,7 +219,7 @@
             <body name="knee_and_ankle_assembly_2" pos="-1.38778e-17 -0.07865 0.0001" quat="1 -1.2983e-15 -4.44089e-16 -2.88152e-15">
               <!-- Joint from knee_and_ankle_assembly to knee_and_ankle_assembly_2 -->
               <joint axis="0 0 1" name="left_knee" type="hinge" range="0.5 1.2" frictionloss="0.5"/>
-              <inertial pos="5.01859e-06 -0.0577465 0.0181136" mass="0.07259" fullinertia="4.99575e-05 1.87273e-05 4.23932e-05 1.03817e-08 2.25175e-09 8.81049e-08"/>
+              <inertial pos="5.01859e-06 -0.0577465 0.0181136" mass="0.025867" fullinertia="4.99575e-05 1.87273e-05 4.23932e-05 1.03817e-08 2.25175e-09 8.81049e-08"/>
               <!-- Part leg_spacer_2 -->
               <geom type="mesh" class="visual" pos="0.01606 0.14365 0.10925" quat="0.707107 -0.707107 0 1.93371e-29" mesh="leg_spacer" material="leg_spacer_material"/>
               <geom type="mesh" class="collision" pos="0.01606 0.14365 0.10925" quat="0.707107 -0.707107 0 1.93371e-29" mesh="leg_spacer" material="leg_spacer_material"/>
@@ -244,7 +248,7 @@
               <body name="foot_assembly" pos="-1.38778e-17 -0.07865 0.0001" quat="1 0 -3.94143e-19 1.35956e-16">
                 <!-- Joint from knee_and_ankle_assembly_2 to foot_assembly -->
                 <joint axis="0 0 1" name="left_ankle" type="hinge" range="0.5 1.2" frictionloss="0.5"/>
-                <inertial pos="0.0110718 -0.0246608 0.0190626" mass="0.07524" fullinertia="1.87482e-05 6.74427e-05 6.061e-05 1.58839e-06 -6.52354e-09 5.67391e-08"/>
+                <inertial pos="0.0110718 -0.0246608 0.0190626" mass="0.026811" fullinertia="1.87482e-05 6.74427e-05 6.061e-05 1.58839e-06 -6.52354e-09 5.67391e-08"/>
                 <!-- Part foot_side -->
                 <geom type="mesh" class="visual" pos="0.01606 0.2223 0.10905" quat="0.707107 -0.707107 -0 -6.65837e-31" mesh="foot_side" material="foot_side_material"/>
                 <geom type="mesh" class="collision" pos="0.01606 0.2223 0.10905" quat="0.707107 -0.707107 -0 -6.65837e-31" mesh="foot_side" material="foot_side_material"/>
@@ -265,11 +269,13 @@
         </body>
       </body>
       <!-- Link neck_pitch_assembly -->
-      <!-- change all joints to be fixed -->
+      <!-- ================================================ -->
+      <!-- comment out joint axis lines to remove actuation -->
+      <!-- ================================================ -->
       <body name="neck_pitch_assembly" pos="0.001 0.01915 0.0900009" quat="0.707107 0.707107 -7.96148e-15 7.80864e-15">
         <!-- Joint from trunk_assembly to neck_pitch_assembly -->
-        <joint axis="0 0 1" name="neck_pitch" type="hinge" range="-0.3490658503988437 1.1344640137963364"/>
-        <inertial pos="-5.63137e-06 0.0492968 0.0181786" mass="0.06618" fullinertia="3.49456e-05 1.70231e-05 2.80043e-05 8.75633e-09 -2.15592e-09 -1.85188e-08"/>
+        <!-- <joint axis="0 0 1" name="neck_pitch" type="hinge" range="-0.3490658503988437 1.1344640137963364"/> -->
+        <inertial pos="-5.63137e-06 0.0492968 0.0181786" mass="0.000001" fullinertia="3.49456e-05 1.70231e-05 2.80043e-05 8.75633e-09 -2.15592e-09 -1.85188e-08"/>
         <!-- Part neck_left_sheet -->
         <geom type="mesh" class="visual" pos="-0.02 -0.02511 0.01905" quat="0.707107 -0.707107 0 3.11573e-34" mesh="neck_left_sheet" material="neck_left_sheet_material"/>
         <geom type="mesh" class="collision" pos="-0.02 -0.02511 0.01905" quat="0.707107 -0.707107 0 3.11573e-34" mesh="neck_left_sheet" material="neck_left_sheet_material"/>
@@ -294,16 +300,16 @@
         <!-- Link head_pitch_to_yaw -->
         <body name="head_pitch_to_yaw" pos="2.21177e-17 0.066 -1.04083e-17" quat="1 -6.82994e-17 -0 2.77556e-17">
           <!-- Joint from neck_pitch_assembly to head_pitch_to_yaw -->
-          <joint axis="0 0 1" name="head_pitch" type="hinge" range="-0.7853981633974483 0.7853981633974483"/>
-          <inertial pos="-0.00766247 0.026015 0.0186681" mass="0.0169378" fullinertia="9.43036e-06 4.64763e-06 8.02915e-06 1.35195e-06 3.05899e-08 -8.42802e-08"/>
+          <!-- <joint axis="0 0 1" name="head_pitch" type="hinge" range="-0.7853981633974483 0.7853981633974483"/> -->
+          <inertial pos="-0.00766247 0.026015 0.0186681" mass="0.000001" fullinertia="9.43036e-06 4.64763e-06 8.02915e-06 1.35195e-06 3.05899e-08 -8.42802e-08"/>
           <!-- Part head_pitch_to_yaw -->
           <geom type="mesh" class="visual" pos="-0.02 -0.09111 0.01905" quat="0.707107 -0.707107 -0 -1.20045e-33" mesh="head_pitch_to_yaw" material="head_pitch_to_yaw_material"/>
           <geom type="mesh" class="collision" pos="-0.02 -0.09111 0.01905" quat="0.707107 -0.707107 -0 -1.20045e-33" mesh="head_pitch_to_yaw" material="head_pitch_to_yaw_material"/>
           <!-- Link neck_yaw_assembly -->
           <body name="neck_yaw_assembly" pos="-1.32273e-17 0.057 0.01905" quat="0.707107 -0.707107 0 2.16489e-17">
             <!-- Joint from head_pitch_to_yaw to neck_yaw_assembly -->
-            <joint axis="0 0 1" name="head_yaw" type="hinge" range="-2.792526803190927 2.792526803190927"/>
-            <inertial pos="0.00412907 3.95745e-06 -0.0222828" mass="0.0918099" fullinertia="3.11706e-05 6.94935e-05 7.04025e-05 4.29429e-09 -4.41251e-06 -3.82028e-09"/>
+            <!-- <joint axis="0 0 1" name="head_yaw" type="hinge" range="-2.792526803190927 2.792526803190927"/> -->
+            <inertial pos="0.00412907 3.95745e-06 -0.0222828" mass="0.000001" fullinertia="3.11706e-05 6.94935e-05 7.04025e-05 4.29429e-09 -4.41251e-06 -3.82028e-09"/>
             <!-- Part head_yaw_to_roll -->
             <geom type="mesh" class="visual" pos="-0.02 6.13929e-18 -0.14821" quat="1 0 -1.09032e-16 -7.50622e-17" mesh="head_yaw_to_roll" material="head_yaw_to_roll_material"/>
             <geom type="mesh" class="collision" pos="-0.02 6.13929e-18 -0.14821" quat="1 0 -1.09032e-16 -7.50622e-17" mesh="head_yaw_to_roll" material="head_yaw_to_roll_material"/>
@@ -325,8 +331,8 @@
             <!-- Link head_assembly -->
             <body name="head_assembly" pos="0.04095 6.13929e-18 -0.01915" quat="0.707107 0 -0.707107 -1.77494e-30">
               <!-- Joint from neck_yaw_assembly to head_assembly -->
-              <joint axis="0 0 1" name="head_roll" type="hinge" range="-0.5235987755982988 0.5235987755982988"/>
-              <inertial pos="0.00815617 -0.0039342 0.0227894" mass="0.406607" fullinertia="0.00244582 0.00168662 0.00107943 -2.00028e-06 9.23825e-05 -1.90734e-05"/>
+              <!-- <joint axis="0 0 1" name="head_roll" type="hinge" range="-0.5235987755982988 0.5235987755982988"/> -->
+              <inertial pos="0.00815617 -0.0039342 0.0227894" mass="0.000001" fullinertia="0.00244582 0.00168662 0.00107943 -2.00028e-06 9.23825e-05 -1.90734e-05"/>
               <!-- Part right_antenna_holder -->
               <geom type="mesh" class="visual" pos="-0.12906 -3.15521e-14 0.06095" quat="0.707107 -7.80064e-14 0.707107 1.15784e-13" mesh="right_antenna_holder" material="right_antenna_holder_material"/>
               <geom type="mesh" class="collision" pos="-0.12906 -3.15521e-14 0.06095" quat="0.707107 -7.80064e-14 0.707107 1.15784e-13" mesh="right_antenna_holder" material="right_antenna_holder_material"/>
@@ -424,10 +430,13 @@
         </body>
       </body>
       <!-- Link hip_roll_assembly_2 -->
+      <!-- =================================== -->
+      <!-- gave hip roll joints small range -->
+      <!-- =================================== -->
       <body name="hip_roll_assembly_2" pos="-0.019 -0.035 0.0459409" quat="1 -1.47858e-16 -1.12133e-14 -2.46243e-18">
         <!-- Joint from trunk_assembly to hip_roll_assembly_2 -->
         <joint axis="0 0 1" name="right_hip_yaw" type="hinge" range="0.5 1.2" frictionloss="0.5"/>
-        <inertial pos="0.000795081 -5.46541e-06 -0.03306" mass="0.06648" fullinertia="2.44411e-05 2.81818e-05 1.42687e-05 2.35658e-09 -3.81059e-07 -7.50036e-09"/>
+        <inertial pos="0.000795081 -5.46541e-06 -0.03306" mass="0.039540" fullinertia="2.44411e-05 2.81818e-05 1.42687e-05 2.35658e-09 -3.81059e-07 -7.50036e-09"/>
         <!-- Part roll_motor_bottom_2 -->
         <geom type="mesh" class="visual" pos="-3.67761e-16 -0.035 0.01905" quat="1 0 3.08149e-29 -1.52656e-16" mesh="roll_motor_bottom" material="roll_motor_bottom_material"/>
         <geom type="mesh" class="collision" pos="-3.67761e-16 -0.035 0.01905" quat="1 0 3.08149e-29 -1.52656e-16" mesh="roll_motor_bottom" material="roll_motor_bottom_material"/>
@@ -452,8 +461,9 @@
         <!-- Link right_roll_to_pitch_assembly -->
         <body name="right_roll_to_pitch_assembly" pos="0.01905 5.9841e-14 -0.046015" quat="0.5 -0.5 -0.5 0.5">
           <!-- Joint from hip_roll_assembly_2 to right_roll_to_pitch_assembly -->
-          <joint axis="0 0 1" name="right_hip_roll" type="hinge" range="0.5 1.2" frictionloss="0.5"/>
-          <inertial pos="-0.0507497 -0.000417205 0.0204377" mass="0.07516" fullinertia="2.52676e-05 4.15738e-05 2.82863e-05 -1.31172e-07 7.32857e-07 -8.94684e-08"/>
+          <!-- fix hip roll joints with small range, locked via equality constraint -->
+          <joint axis="0 0 1" name="right_hip_roll" type="hinge" range="-0.01 0.01" frictionloss="0.5"/>
+          <inertial pos="-0.0507497 -0.000417205 0.0204377" mass="0.044703" fullinertia="2.52676e-05 4.15738e-05 2.82863e-05 -1.31172e-07 7.32857e-07 -8.94684e-08"/>
           <!-- Part right_roll_to_pitch -->
           <geom type="mesh" class="visual" pos="0.035 -0.065 0.01905" quat="0.5 0.5 0.5 -0.5" mesh="right_roll_to_pitch" material="right_roll_to_pitch_material"/>
           <geom type="mesh" class="collision" pos="0.035 -0.065 0.01905" quat="0.5 0.5 0.5 -0.5" mesh="right_roll_to_pitch" material="right_roll_to_pitch_material"/>
@@ -476,7 +486,7 @@
           <body name="knee_and_ankle_assembly_3" pos="-0.07415 1.31378e-16 0.03511" quat="0.707107 -0 0.707107 -1.96261e-17">
             <!-- Joint from right_roll_to_pitch_assembly to knee_and_ankle_assembly_3 -->
             <joint axis="0 0 1" name="right_hip_pitch" type="hinge" range="0.5 1.2" frictionloss="0.5"/>
-            <inertial pos="0.00253369 0.0390636 0.010809" mass="0.12407" fullinertia="0.000212363 7.93324e-05 0.000225619 2.68706e-05 3.9656e-06 -2.17407e-05"/>
+            <inertial pos="0.00253369 0.0390636 0.010809" mass="0.073793" fullinertia="0.000212363 7.93324e-05 0.000225619 2.68706e-05 3.9656e-06 -2.17407e-05"/>
             <!-- Part right_cache -->
             <geom type="mesh" class="visual" pos="0.01606 -0.065 0.1092" quat="0.707107 0.707107 -0 3.92523e-17" mesh="right_cache" material="right_cache_material"/>
             <geom type="mesh" class="collision" pos="0.01606 -0.065 0.1092" quat="0.707107 0.707107 -0 3.92523e-17" mesh="right_cache" material="right_cache_material"/>
@@ -508,7 +518,7 @@
             <body name="knee_and_ankle_assembly_4" pos="-6.93889e-17 0.07865 0.037" quat="0 1 0 0">
               <!-- Joint from knee_and_ankle_assembly_3 to knee_and_ankle_assembly_4 -->
               <joint axis="0 0 1" name="right_knee" type="hinge" range="0.5 1.2" frictionloss="0.5"/>
-              <inertial pos="5.01859e-06 -0.0577465 0.0181136" mass="0.07259" fullinertia="4.99575e-05 1.87273e-05 4.23932e-05 1.03817e-08 2.25175e-09 8.81049e-08"/>
+              <inertial pos="5.01859e-06 -0.0577465 0.0181136" mass="0.025867" fullinertia="4.99575e-05 1.87273e-05 4.23932e-05 1.03817e-08 2.25175e-09 8.81049e-08"/>
               <!-- Part leg_spacer_4 -->
               <geom type="mesh" class="visual" pos="0.01606 0.14365 0.10925" quat="0.707107 -0.707107 -0 -1.96262e-17" mesh="leg_spacer" material="leg_spacer_material"/>
               <geom type="mesh" class="collision" pos="0.01606 0.14365 0.10925" quat="0.707107 -0.707107 -0 -1.96262e-17" mesh="leg_spacer" material="leg_spacer_material"/>
@@ -537,7 +547,7 @@
               <body name="foot_assembly_2" pos="-4.16334e-17 -0.07865 0.0001" quat="1 -0 -1.11681e-16 -2.77555e-17">
                 <!-- Joint from knee_and_ankle_assembly_4 to foot_assembly_2 -->
                 <joint axis="0 0 1" name="right_ankle" type="hinge" range="0.5 1.2" frictionloss="0.5"/>
-                <inertial pos="0.0110718 -0.0246608 0.0190626" mass="0.07524" fullinertia="1.87482e-05 6.74427e-05 6.061e-05 1.58839e-06 -6.52354e-09 5.67391e-08"/>
+                <inertial pos="0.0110718 -0.0246608 0.0190626" mass="0.026811" fullinertia="1.87482e-05 6.74427e-05 6.061e-05 1.58839e-06 -6.52354e-09 5.67391e-08"/>
                 <!-- Part foot_side_2 -->
                 <geom type="mesh" class="visual" pos="0.01606 0.2223 0.10905" quat="0.707107 -0.707107 -0 -4.25266e-30" mesh="foot_side" material="foot_side_material"/>
                 <geom type="mesh" class="collision" pos="0.01606 0.2223 0.10905" quat="0.707107 -0.707107 -0 -4.25266e-30" mesh="foot_side" material="foot_side_material"/>
@@ -672,6 +682,10 @@
     <material name="right_cache_material" rgba="0.917647 0.917647 0.917647 1"/>
   </asset>
   <actuator>
+  <!-- ============================================================= -->
+  <!-- TRY: comment out actuation for left/right hip roll joints? -->
+  <!-- TRY: changing inherit range -->
+  <!-- ============================================================= -->
     <position class="bdx_droid_model" name="left_hip_yaw" joint="left_hip_yaw" forcerange="-10.0 10.0" inheritrange="1"/>
     <position class="bdx_droid_model" name="left_hip_roll" joint="left_hip_roll" forcerange="-10.0 10.0" inheritrange="1"/>
     <position class="bdx_droid_model" name="left_hip_pitch" joint="left_hip_pitch" forcerange="-10.0 10.0" inheritrange="1"/>
@@ -735,5 +749,9 @@
       <touch name="foot_force_R" site="right_foot"/>
       <touch name="foot_force_L" site="left_foot"/>
   </sensor>
-  <equality/>
+  <!-- <equality> -->
+    <!-- Lock hip roll joints at 0 for planar motion
+    <joint joint1="left_hip_roll" polycoef="0 1 0 0 0"/>
+    <joint joint1="right_hip_roll" polycoef="0 1 0 0 0"/> -->
+  <!-- </equality> -->
 </mujoco>
