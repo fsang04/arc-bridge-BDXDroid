@@ -1,4 +1,4 @@
-%% 12/4-12/5 gait library adding LCM
+%% 12/4-12/5-12/6 gait library adding LCM
 % copy of gaitlib-11-27.m
 % using draft from slip3D_WBC_integrated.m
 
@@ -32,12 +32,12 @@ params.yhip = 0.035;        % zero for testing. lateral hip offset (left hip at 
 params.th0 = deg2rad(25);   % init TD angle guess
 params.ks0 = 1.5;             % init stiffness guess (kN/m)
 params.tf = 2.0;            % single step time interval
+params.mu = 1; % friction
+params.dt = dt;
 
 % sim parameters
 N = 10; % number of steps
 params.X0 = [0.21; 0.6; 0]; % starting X for sim loop
-params.Kd
-params.Kp
 
 % % robot physical parameters (for dynamics computation)
 % params.l = [0.2; 0.0; 0.4; 0.4; 0.03];  % [l_hip_roll; l_hip_pitch; l_thigh; l_shin; l_foot]
@@ -130,36 +130,48 @@ fprintf('Simulation complete.\n--------------------\n');
 %% WBC Parameters
 Kp_com = diag([1000, 1000, 1500]);  % pos gains [x, y, z]
 Kd_com = diag([100, 100, 150]);     % vel gains 
-% foot controller gains
-params.Kp_p = diag([500, 500]);     % pos gains [x, z]
-params.Kd_d = diag([50, 50]);       % vel gains
-params.Kp_w;
-params.Kd_w;
+% foot controller gains (4x4 for both feet: [Rx; Rz; Lx; Lz])
+params.Kp_p = diag(repmat([500, 800], [1, 2]));     % pos gains [Rx, Rz, Lx, Lz]
+params.Kd_p = diag(repmat([50, 60], [1, 2]));       % vel gains [Rx, Rz, Lx, Lz]
+% params.Kp_w;
+% params.Kd_w;
+params.w_tau = 1;
+params.w_qdd = 1e-5;
+params.w_Fs = 1e-4;
+
+% task weighting: 4 (foot) + 3 (com) + 3 (ang mom) + 10 (pose)
+w_foot = ones(1, 4);                  % [1, 1, 1, 1]
+w_com = repmat(25, [1, 3]);           % [25, 25, 25]
+w_angmom = [20, 4, 20];               % [20, 4, 20]
+% w_torso = [17.5, 70, 14];             % [17.5, 70, 14]
+w_hip = repmat(0.1, [1, 6]);          % [0.1, 0.1]
+w_knee = repmat(0.5, [1, 2]);         % [0.5, 0.5]
+w_ankle = repmat(0.1, [1, 2]);        % [0.1, 0.1] 
+w_task_vec = [w_foot, w_com, w_angmom, w_hip, w_knee, w_ankle];
+params.w_task = diag(w_task_vec);     % 20x20 diagonal weighting matrix
 
 rs = struct();
 rs.Xslip = params.X0;               % will store current SLIP apex state [h; vx; vy]
 rs.uslip = [deg2rad(25); 0; 1500; 1500]; % will store SLIP control [th; phi; ks1; ks2]
 rs.stance_foot_idx = 1;             % 1 = left foot stance, 2 = right foot stance
-rs.t = 0;                           % keep track of curr time
+t = 0;                           % keep track of curr time
 rs.step_count = 0;                  % step counter
 
 import casadi.*
 PTSC_func = setup_PTSC(params);
 
-%% LCM Main Control Loop
+% %% LCM Main Control Loop
 fprintf('Starting TSC control loop...\n');
 while true
     msg = aggregator.getNextMessage(0);
     if isempty(msg)
-        rate_ctrl.waitfor();
-        rs.t = rs.t + dt;
         continue;
     end
     lc_state = eval("lcm_msgs."+lcm_state_topic+"_t(msg.data)");
     lc_cmd   = eval("lcm_msgs."+lcm_cmd_topic+"_t()");
     
     % ------- 1. SLIP template update -------
-    rs = updateRobotSLIPState(t, lc_state, rs, p); 
+    rs = updateRobotSLIPState(t, lc_state, rs, params); 
 
     % retrieve closest K corresponding to vx from "library":
     vx_curr = rs.Xslip(2);
@@ -167,10 +179,23 @@ while true
     X0_star = X0_stars(:, idx);
     u0_star = u0_stars(:, idx);
     K = K_all{idx};
-
+    fprintf('Optimal library gait found.\n');
+    fprintf('  K =\n'); disp(K);
+    fprintf('  rs.Xslip = [%.2fº, %.4f, %.4f, %.4f]\n', rs.Xslip);
+    fprintf('  X0_star = [%.4f, %.4f, %.4f], error = [%.4f, %.4f, %.4f]\n', ...
+            X0_star(1), X0_star(2), X0_star(3), ...
+            X0(1)-X0_star(1), X0(2)-X0_star(2), X0(3)-X0_star(3));
+    fprintf('  u0_star = [%.2fº, %.4f, %.4f, %.4f]\n', rad2deg(u0_star(1)), u0_star(2:4));
+    fprintf('  K*(X0-X0_star) = [%.4f, %.4f, %.4f, %.4f]\n', (K * (X0 - X0_star))');
     u = u0_star + K * (rs.Xslip - X0_star);                  % eq 19
     fprintf('  u = [%.2fº, %.4f, %.4f kN/m, %.4f kN/m]\n', rad2deg(u(1)), u(2:4));
     rs.uslip = u;   % store to be sent over later
+
+    % bound u values to be physically reasonable
+    u(1) = max(deg2rad(8), min(deg2rad(30), u(1)));  % th: 8-30 deg
+    u(2) = max(deg2rad(-30), min(deg2rad(30), u(2))); % phi: ±30 deg
+    u(3) = max(0.5, min(50.0, u(3)));
+    u(4) = max(0.5, min(50.0, u(4)));
 
     % ------- 2. update desired CoM traj / foot traj -------
     [X1, t_TD, t_LO, com, pf_TD] = slip_return_map(rs.Xslip, rs.uslip, params);
@@ -180,14 +205,14 @@ while true
     rs.T_step = com.t_traj(end);  % total step period (bc time is non-cumulative)
     
     % store pf_LO at LO time (used to be in updateRobotSLIPState, moved bc it only happens once per loop)
-    t_step = mod(rs.t - rs.t_step_start, rs.T_step);
+    t_step = mod(t - rs.t_step_start, rs.T_step);
     dt = 1/500;
     if abs(t_step - rs.t_LO) < dt % check if within one timestep of t_LO -> prone to error?
         rs.pf_trans(:, 1) = rs.pf(1:2);  % right foot lifts off. store right foot pos [x; z]
     end
 
     % ------- 3. compute prioritized tasks ------
-    rsDes = updateRobotStateDes(rs);
+    rsDes = updateRobotStateDes(t, rs);
     [Atask, btask] = compute_prioritized_tasks(rs, rsDes, params);
     
     % ------- 4. PTSC -------
@@ -196,10 +221,13 @@ while true
     % ------- 5. publish to LCM -------
     lc_cmd.qj_tau = tau;  % (10 x 1) actuated joint torques
     lc.publish(lcm_cmd_topic, lc_cmd);
+
+    rate_ctrl.waitfor();
+    t = t + dt;
 end
 
 % ========================================================================
-%% LCM functions
+% %% LCM functions
 % ========================================================================
 function rs = updateRobotSLIPState(t, state, rs, p)
     pos = state.position;
@@ -245,18 +273,24 @@ function rs = updateRobotSLIPState(t, state, rs, p)
     rs.Jtor = Jtor;         % just edited bdx_droid_bridge.py
     rs.vtor = Jtor * rs.dq; % torso vel wrt slip CoM
     rs.dJtordq = dJtordq;   % also edited bdx bridge
-    rs.pf = pf;              
-    rs.Jf = Jf;
-    rs.vf = Jf * rs.dq;     % foot vel wrt slip CoM (task space)
-    rs.dJfdq = dJfdq;
+    
+    % 2d control for now
+    pf_reshape = [pf(1); pf(3); pf(4); pf(6)]; % 6x1 -> 4x1
+    Jf_reshape = [Jf(1,:); Jf(3,:); Jf(4,:); Jf(6,:)]; % 6x13 -> 4x13
+    dJfdq_reshape = [dJfdq(1); dJfdq(3); dJfdq(4); dJfdq(6)];
+    rs.pf = pf_reshape;              
+    rs.Jf = Jf_reshape;
+    rs.vf = rs.Jf * rs.dq;     % foot vel wrt slip CoM (task space)
+    rs.dJfdq = dJfdq_reshape;
     rs.H = H;
     rs.bias = bias;
     
     % init at start of sim
     if t < p.dt
         rs.t_step_start = t;
-        rs.stance_foot_idx = 1; % start with right foot in stance             
+        rs.stance_foot_idx = 1; % start with right foot in stance          
         rs.pf_trans = reshape(rs.pf, [2,2]);    % [right; left] columns
+        fprintf('rs.pf_trans = \n'); disp(rs.pf_trans);
     end
     % update stance foot and detect LO
     if isfield(rs, 't_TD') && isfield(rs, 't_LO') && isfield(rs, 'T_step')
@@ -272,12 +306,12 @@ function rs = updateRobotSLIPState(t, state, rs, p)
     end
 end
 
-function rsDes = updateRobotStateDes(rs) 
-    t_step = mod(rs.t - rs.t_step_start, rs.T_step);  % time within current step
-    t_swing = t - t_LO;
+function rsDes = updateRobotStateDes(t, rs) 
     t_LO = rs.t_LO;
-    p_TD = rs.pf_TD; % store this in get_TD_pos
-
+    p_TD = rs.pf_TD; % stored from main loop
+    t_step = mod(t - rs.t_step_start, rs.T_step);  % time within current step
+    t_swing = t - t_LO;
+   
     pfd = zeros(4, 1); % [Rx; Rz; Lx; Lz]
     dpfd = zeros(4, 1);
     ddpfd = zeros(4, 1);
@@ -360,13 +394,13 @@ function [p, v, a] = cubic_spline(p0, pf, s, T)
 end
 
 % ========================================================================
-%% TSC functions
+% %% TSC functions
 % ========================================================================
 function e_theta = orientationError(wd, w)
     % e_theta: 3x1 angle-axis representation of error between a desired and actual orientation
 end
 
-function [ddp_c, dw_c] = foot_controller(rs, rsDes, Kp_p, Kd_p, Kp_w, Kd_w)    % eq. 22/23
+function [ddp_c, dw_c] = foot_controller(rs, rsDes, params)    % eq. 22/23
 % outputs
 %   ddp_c: commanded linear foot accel 4x1 [Rx; Rz; Lx; Lz]
 %   wd_c: commanded angular foot accel 
@@ -375,7 +409,7 @@ function [ddp_c, dw_c] = foot_controller(rs, rsDes, Kp_p, Kd_p, Kp_w, Kd_w)    %
     % e_theta = orientationError(w_des, w);
     % dw_c = wd_des + Kd_w * (w_des - w) + Kp_w * e_theta;
     dw_c = zeros(2, 1); % for now 
-    ddp_c = rsDes.ddpf + Kd_foot * (rsDes.dpf - rs.vf) + Kp_foot * (rsDes.pf - rs.pf);
+    ddp_c = rsDes.ddpf + params.Kd_p * (rsDes.dpf - rs.vf) + params.Kp_p * (rsDes.pf - rs.pf);
 end
 
 function [dl_Gc, dk_Gc] = momentum_controller(com, rs, params, Kp_l, Kd_l, Kd_k)    % eq. 24/25
@@ -425,25 +459,33 @@ function [Atask, btask] = compute_prioritized_tasks(rs, rsDes, params)
 %   ddp_c, dw_c: commanded foot controller dynamics
 %   dl_Gc, dk_Gc: commanded momentum controller dynamics
 %   ddq_c: commanded pose controller dynamics
-    J_foot = rs.Jf;  % foot jacobian 4x13 [Rx; Rz; Lx; Lz] - check bdx bridge output?
     
-    % J_foot * qdd + dJfdq = ddp_c
-    % -> J_foot * qdd = ddp_c - dJfdq
-    A1 = Jfoot; % 4x13
+    % FOOT TASK:
+    % J_foot * qdd + dJfdq = ddp_c -> J_foot * qdd = ddp_c - dJfdq
+    [ddp_c, dw_c] = foot_controller(rs, rsDes, params); 
+    A1 = rs.Jf; % foot jacobian 6x13 -> change to 4x13 [Rx; Rz; Lx; Lz] for now 
     b1 = ddp_c - rs.dJfdq;  % 4x1
 
-    % null space projection when adding other tasks
+    % will add null space projection when adding other tasks
     % A2 = J_mom * N1, where N1 = null space of A1
     % A3 = J_pose * N2, where N2 = null space of [A1; A2]
-    Atask = A1;
-    btask = b1;
-    % Atask = [A1; A2; A3]; % 20x13: 4 (foot) + 6 (mom) + 10 (pose)
+    % MOMENTUM TASK: (TODO)
+    A2 = zeros(6, 13); 
+    b2 = zeros(6, 1);
+
+    % POSE TASK: (TODO)
+    A3 = zeros(10, 13); 
+    b3 = zeros(10, 1);
+
+    Atask = [A1; A2; A3]; % 20x13
+    btask = [b1; b2; b3]; % 20x1
 end
 
 function [tau, qdd, Fs] = my_PTSC(PTSC_func, rs, Atask, btask)
 % call compiled casadi func
-    contact = [rs.stance_foot_idx == 1; rs.stance_foot_idx == 2];  % 2x1
-    [tau, qdd, Fs] = PTSC_func(rs.q, rs.dq, Atask, btask, rs.H, rs.bias, rs.Jf, contact);
+import casadi.* % to convert to DM
+    contact = double([rs.stance_foot_idx == 1; rs.stance_foot_idx == 2]);  % 2x1
+    [tau, qdd, Fs] = PTSC_func(rs.q, rs.dq, Atask, btask, rs.H, rs.bias, rs.Jf, contact); 
     tau = full(tau);
     qdd = full(qdd);
     Fs = full(Fs);
@@ -461,6 +503,7 @@ function PTSC_func = setup_PTSC(params)
     
     N = 13;     % num DoF
     Ntau = 10;  % num actuated DoF
+    Ntask = 20; % 4 (foot) + 6 (mom) + 10 (pose)
     nc = 4;     % num contact constraints (2 per foot?)
     mu = params.mu;
     
@@ -475,29 +518,27 @@ function PTSC_func = setup_PTSC(params)
     % parameters (passed at runtime):
     q = opti.parameter(N, 1);
     dq = opti.parameter(N, 1);
+    Atask = opti.parameter(Ntask, N);  % total task Jacobian (with priorities)
+    btask = opti.parameter(Ntask, 1);  % total task error (with priorities)
     H = opti.parameter(N, N);
     bias = opti.parameter(N, 1);
     J_c = opti.parameter(nc, N); 
-    contact = opti.parameter(2, 1);
+    contact = opti.parameter(2, 1);   
 
-    % task parameters (from compute_prioritized_tasks)
-    Atask = opti.parameter(Ntask, N);  % total task Jacobian (with priorities)
-    btask = opti.parameter(Ntask, 1);  % total task error (with priorities)
-
-    % Apply contact selection matrix
-    Sa = [zeros(Ntau,3); ones(Ntau,Ntau)]; % actuation selection matrix [0_10x6 1_10x10] 3 or 6?
-    J_c_active = Sa * J_c;
+    % contact selection matrix
+    Sa = [zeros(Ntau,3), ones(Ntau,Ntau)]; % actuation selection matrix [0_10x6 1_10x10] 3 or 6?
 
     % objective: minimize task tracking error + regularization
     e_task = Atask * qdd + btask;  % task error
-    obj = w_task * (e_task' * e_task);  % ||Atask*qdd + btask||^2
-    obj = obj + w_qdd * (qdd' * qdd);    % weighted accelerations
-    obj = obj + w_tau * (tau' * tau);    % weighted torques
-    obj = obj + w_F * (Fs' * Fs); % weighted contact 
+    obj = MX(0);
+    obj = obj + e_task' * params.w_task * e_task;  % ||Atask*qdd + btask||^2
+    obj = obj + tau' * params.w_tau * tau;    % weighted torques
+    obj = obj + qdd' * params.w_qdd * qdd;    % weighted accelerations
+    obj = obj + Fs' * params.w_Fs * Fs; % weighted contact 
     opti.minimize(obj);
     
     % constraints: 
-    opti.subject_to(H * qdd + bias == Sa' * tau + J_c_active' * Fs); % dynamics constraint
+    opti.subject_to(H * qdd + bias == Sa' * tau + J_c' * Fs); % dynamics constraint
     F_R = Fs(1:2);
     F_L = Fs(3:4);
     opti.subject_to(-mu * F_R(2) <= F_R(1) <= mu * F_R(2)); % friction cone constraints: -mu*Fz <= Fx <= mu*Fz
